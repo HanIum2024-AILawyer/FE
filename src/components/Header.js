@@ -17,6 +17,14 @@ const TopBar = styled.div`
     color: #fff;
     text-decoration: none;
     margin-right: 30px;
+
+    &:visited {
+      color: #fff;
+    }
+
+    &:hover {
+      text-decoration: none;
+    }
   }
 `;
 
@@ -39,6 +47,25 @@ const Logo = styled.div`
     height: 50px;
     margin-right: 10px;
   }
+
+  a {
+    display: flex;
+    align-items: center;
+    color: #fff;
+    text-decoration: none;
+
+    &:visited {
+      color: #fff;
+    }
+
+    &:hover {
+      text-decoration: none;
+    }
+
+    span {
+      cursor: pointer;
+    }
+  }
 `;
 
 const Nav = styled.nav`
@@ -52,6 +79,7 @@ const Nav = styled.nav`
   li {
     cursor: pointer;
     white-space: nowrap;
+    position: relative;
   }
 
   a {
@@ -99,6 +127,7 @@ const DropdownBox = styled.div`
     color: #fff;
     text-decoration: none;
     margin: 5px 0;
+
     &:hover {
       text-decoration: none;
     }
@@ -121,13 +150,14 @@ const MenuDropdownBox = styled.div`
   color: white;
   padding: 10px;
   border-radius: 5px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.01);
   z-index: 1000;
 
   a {
     color: #fff;
     text-decoration: none;
     margin: 5px 0;
+
     &:hover {
       text-decoration: none;
     }
@@ -140,13 +170,14 @@ const MenuDropdownBox = styled.div`
 
 const DropMenuStyle = styled.div`
   position: absolute;
-  top: 143px;
+  top: 100%;
   left: 0;
-  width: 100%;
-  background-color: #09132d;
+  width: 200px;
+  background-color: rgba(9, 19, 45, 0.8);
   padding: 20px;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   z-index: 999;
+  display: ${({ isVisible }) => (isVisible ? "block" : "none")};
 `;
 
 const DropMenuContainer = styled.div`
@@ -155,13 +186,26 @@ const DropMenuContainer = styled.div`
   grid-template-rows: repeat(2, 40px);
   grid-template-columns: repeat(3, 170px);
   white-space: nowrap;
-  left: 50%;
 `;
 
 const DropMenuList = styled.div`
   padding: 10px;
-  background-color: #09132d;
+  background-color: gray;
   color: white;
+  transform: translate(-40%, 0);
+
+  a {
+    color: white;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: none;
+    }
+
+    &:visited {
+      color: white;
+    }
+  }
 `;
 
 const Header = () => {
@@ -169,39 +213,13 @@ const Header = () => {
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
   const menuDropdownRef = useRef(null);
-  const dropMenuRef = useRef(null);
-  const headerContainerRef = useRef(null);
 
-  const toggleDropdown = (dropdownType) => {
-    setActiveDropdown((prev) => (prev === dropdownType ? null : dropdownType));
-  };
-
-  const handleMouseEnter = () => {
-    setActiveDropdown("dropMenu");
+  const handleMouseEnter = (menu) => {
+    setActiveDropdown(menu);
   };
 
   const handleMouseLeave = (event) => {
-    if (
-      headerContainerRef.current &&
-      dropMenuRef.current &&
-      event.relatedTarget instanceof Node &&
-      !headerContainerRef.current.contains(event.relatedTarget) &&
-      !dropMenuRef.current.contains(event.relatedTarget)
-    ) {
-      setActiveDropdown(null);
-    }
-  };
-
-  const handleClickOutside = (event) => {
-    if (
-      dropdownRef.current &&
-      menuDropdownRef.current &&
-      dropMenuRef.current &&
-      event.target instanceof Node &&
-      !dropdownRef.current.contains(event.target) &&
-      !menuDropdownRef.current.contains(event.target) &&
-      !dropMenuRef.current.contains(event.target)
-    ) {
+    if (!event.currentTarget.contains(event.relatedTarget)) {
       setActiveDropdown(null);
     }
   };
@@ -212,45 +230,116 @@ const Header = () => {
     // history.push("/login");
   };
 
-  useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
   return (
     <>
       <TopBar>
         <Link to="/intro">웹사이트 소개</Link>
         <Link to="/developer">개발자 소개</Link>
       </TopBar>
-      <HeaderContainer
-        ref={headerContainerRef}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
+      <HeaderContainer>
         <Logo>
-          <img src="../assets/logo.png" alt="스스LAW 로고" />
-          <span>스스LAW</span>
+          <Link to="/">
+            <img src="../assets/logo.png" alt="스스LAW 로고" />
+            <span>스스LAW</span>
+          </Link>
         </Logo>
         <Nav>
           <ul>
-            <li>
+            <li
+              onMouseEnter={() => handleMouseEnter("home")}
+              onMouseLeave={handleMouseLeave}
+            >
               <Link to="/">홈</Link>
+              <DropMenuStyle isVisible={activeDropdown === "home"}>
+                <DropMenuContainer>
+                  <DropMenuList>
+                    <Link to="/chat">AI에게 질문하기</Link>
+                  </DropMenuList>
+                  <DropMenuList>
+                    <Link to="/introLawyer">변호사 목록</Link>
+                  </DropMenuList>
+                  <DropMenuList>
+                    <Link to="/document">소송장 관리하기</Link>
+                  </DropMenuList>
+                  <DropMenuList>AI에게 첨삭받기</DropMenuList>
+                  <DropMenuList></DropMenuList>
+                  <DropMenuList>법률정보 검색하기</DropMenuList>
+                </DropMenuContainer>
+              </DropMenuStyle>
             </li>
-            <li>Ai 상담</li>
-            <li>
+            <li
+              onMouseEnter={() => handleMouseEnter("chat")}
+              onMouseLeave={handleMouseLeave}
+            >
+              <Link to="/Choicechat">Ai 상담</Link>
+              <DropMenuStyle isVisible={activeDropdown === "chat"}>
+                <DropMenuContainer>
+                  <DropMenuList>
+                    <Link to="/chat">AI에게 질문하기</Link>
+                  </DropMenuList>
+                  <DropMenuList>
+                    <Link to="/introLawyer">변호사 목록</Link>
+                  </DropMenuList>
+                  <DropMenuList>
+                    <Link to="/document">소송장 관리하기</Link>
+                  </DropMenuList>
+                  <DropMenuList>AI에게 첨삭받기</DropMenuList>
+                  <DropMenuList></DropMenuList>
+                  <DropMenuList>법률정보 검색하기</DropMenuList>
+                </DropMenuContainer>
+              </DropMenuStyle>
+            </li>
+            <li
+              onMouseEnter={() => handleMouseEnter("introLawyer")}
+              onMouseLeave={handleMouseLeave}
+            >
               <Link to="/introLawyer">변호사 소개</Link>
+              <DropMenuStyle isVisible={activeDropdown === "introLawyer"}>
+                <DropMenuContainer>
+                  <DropMenuList>
+                    <Link to="/chat">AI에게 질문하기</Link>
+                  </DropMenuList>
+                  <DropMenuList>
+                    <Link to="/introLawyer">변호사 목록</Link>
+                  </DropMenuList>
+                  <DropMenuList>
+                    <Link to="/document">소송장 관리하기</Link>
+                  </DropMenuList>
+                  <DropMenuList>AI에게 첨삭받기</DropMenuList>
+                  <DropMenuList></DropMenuList>
+                  <DropMenuList>법률정보 검색하기</DropMenuList>
+                </DropMenuContainer>
+              </DropMenuStyle>
             </li>
-            <li>자료실</li>
+            <li
+              onMouseEnter={() => handleMouseEnter("document")}
+              onMouseLeave={handleMouseLeave}
+            >
+              <Link to="/document">자료실</Link>
+              <DropMenuStyle isVisible={activeDropdown === "document"}>
+                <DropMenuContainer>
+                  <DropMenuList>
+                    <Link to="/chat">AI에게 질문하기</Link>
+                  </DropMenuList>
+                  <DropMenuList>
+                    <Link to="/introLawyer">변호사 목록</Link>
+                  </DropMenuList>
+                  <DropMenuList>
+                    <Link to="/document">소송장 관리하기</Link>
+                  </DropMenuList>
+                  <DropMenuList>AI에게 첨삭받기</DropMenuList>
+                  <DropMenuList></DropMenuList>
+                  <DropMenuList>법률정보 검색하기</DropMenuList>
+                </DropMenuContainer>
+              </DropMenuStyle>
+            </li>
           </ul>
         </Nav>
         <Icons>
-          <FaBars size={20} onClick={() => toggleDropdown("menuDropdown")} />
+          <FaBars size={20} onClick={() => setActiveDropdown("menuDropdown")} />
           <IoMdPerson
             size={20}
-            onClick={() => toggleDropdown("userDropdown")}
+            onClick={() => setActiveDropdown("userDropdown")}
           />
           {activeDropdown === "userDropdown" && (
             <DropdownBox ref={dropdownRef}>
@@ -275,24 +364,6 @@ const Header = () => {
           )}
         </Icons>
       </HeaderContainer>
-      {activeDropdown === "dropMenu" && (
-        <DropMenuStyle ref={dropMenuRef} onMouseLeave={handleMouseLeave}>
-          <DropMenuContainer>
-            <DropMenuList>
-              <Link to="/chat">AI에게 질문하기</Link>
-            </DropMenuList>
-            <DropMenuList>
-              <Link to="/introlawyer">변호사 목록</Link>
-            </DropMenuList>
-            <DropMenuList>
-              <Link to="/document">소송장 관리하기</Link>
-            </DropMenuList>
-            <DropMenuList>AI에게 첨삭받기</DropMenuList>
-            <DropMenuList></DropMenuList>
-            <DropMenuList>법률정보 검색하기</DropMenuList>
-          </DropMenuContainer>
-        </DropMenuStyle>
-      )}
     </>
   );
 };
