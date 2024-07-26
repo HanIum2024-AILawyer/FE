@@ -2,28 +2,29 @@ import React from "react";
 import styled, { createGlobalStyle } from "styled-components";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
-// 페이지 임포트
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+
 import HomePage from "./pages/Home/HomePage";
 import AboutPage from "./pages/About/AboutPage";
 import IntroLawyerPage from "./pages/IntroLawyers/IntroLawyerPage";
-import LoginPage from "./pages/Login/LoginPage";
+import LoginPage from "./pages/Login/LoginPage"; // 이곳에서 /login을 /lo로 바꾸고 싶어요.
 import AdminPage from "./pages/Login/AdminPage";
 import UseRulesPage from "./pages/useRules/useRulesPage";
 import WithdrawlPage from "./pages/withdrawl/withdrawlPage";
 import ChatPage from "./pages/chat/chatPage";
-import ChoicePage from "./pages/Choicechat/ChoicePage";
 import DocumentPage from "./pages/document/DocumentPage";
+import FaqPage from "./pages/faq/faqPage";
+import InquiryPage from "./pages/inquiry/inquiryPage";
+import SearchPage from "./pages/search/searchPage";
+import ChoicePage from "./pages/Choicechat/ChoicePage";
 
-// 전역 스타일 설정
 const GlobalStyle = createGlobalStyle`
   html, body {
     overflow: hidden;
   }
 `;
 
-// 스타일드 컴포넌트 정의
 const AppContainer = styled.div`
   background: url(${process.env.PUBLIC_URL}/assets/background.png) no-repeat
     center center;
@@ -33,7 +34,7 @@ const AppContainer = styled.div`
   flex-direction: column;
   color: #fff;
   text-align: center;
-  overflow: hidden;
+  overflow: hidden; /* 스크롤바 숨기기 */
 `;
 
 const Content = styled.div`
@@ -51,13 +52,17 @@ const App = () => {
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/introLawyer" element={<IntroLawyerPage />} />
-            <Route path="/login" element={<LoginPage />} />
+            <Route path="/lo" element={<LoginPage />} />{" "}
+            {/* /login을 /lo로 변경 */}
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/useRules" element={<UseRulesPage />} />
             <Route path="/withdrawl" element={<WithdrawlPage />} />
             <Route path="/chat" element={<ChatPage />} />
-            <Route path="/choicechat" element={<ChoicePage />} />
             <Route path="/document" element={<DocumentPage />} />
+            <Route path="/faq" element={<FaqPage />} />
+            <Route path="/inquiry" element={<InquiryPage />} />
+            <Route path="/search" element={<SearchPage />} />
+            <Route path="/choicechat" element={<ChoicePage />} />
           </Routes>
         </Content>
         <Footer />

@@ -1,11 +1,11 @@
 import React from "react";
-import inquiryContent from "./inquiryContent";
+import InquiryContent from "./inquiryContent";
 
 const inquiryPage = () => {
   return (
-    <>
-      <inquiryContent />
-    </>
+    <div>
+      <InquiryContent />
+    </div>
   );
 };
 

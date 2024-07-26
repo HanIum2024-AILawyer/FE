@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import axios from "axios";
 
 // Styled Components for Sidebar
 const SidebarContainer = styled.div`
@@ -139,10 +138,10 @@ const ChatApp = () => {
 
   useEffect(() => {
     // Load chat history on initial render
-    axios
-      .get("/api/chat-history")
-      .then((response) => {
-        setChatHistory(response.data);
+    fetch("http://localhost:11434/api/chat-history")
+      .then((response) => response.json())
+      .then((data) => {
+        setChatHistory(data);
       })
       .catch((error) => {
         console.error("Error loading chat history:", error);
@@ -151,10 +150,10 @@ const ChatApp = () => {
 
   useEffect(() => {
     if (selectedChat) {
-      axios
-        .get(`/api/chat-history/${selectedChat}`)
-        .then((response) => {
-          setMessages(response.data.messages);
+      fetch(`http://localhost:11434/api/chat-history/${selectedChat}`)
+        .then((response) => response.json())
+        .then((data) => {
+          setMessages(data.messages);
         })
         .catch((error) => {
           console.error("Error loading chat messages:", error);
@@ -171,11 +170,24 @@ const ChatApp = () => {
       setInput("");
 
       try {
-        const response = await axios.post("/api/chatbot", {
-          message: input,
-          chatId: selectedChat,
+        const response = await fetch("http://localhost:11434/api/chat", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "phi3",
+            stream: false,
+            messages: [
+              {
+                role: "user",
+                content: input,
+              },
+            ],
+          }),
         });
-        const botMessage = response.data.message;
+        const data = await response.json();
+        const botMessage = data.messages[0].content;
 
         const updatedMessages = [
           ...newMessages,
@@ -189,8 +201,14 @@ const ChatApp = () => {
           [selectedChat]: updatedMessages,
         }));
 
-        await axios.post(`/api/chat-history/${selectedChat}`, {
-          messages: updatedMessages,
+        await fetch(`http://localhost:11434/api/chat-history/${selectedChat}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            messages: updatedMessages,
+          }),
         });
       } catch (error) {
         console.error("Error sending message to chatbot:", error);
@@ -204,10 +222,17 @@ const ChatApp = () => {
 
   const handleNewChat = async () => {
     try {
-      const response = await axios.post("/api/chat-history", {
-        title: `New Chat`,
+      const response = await fetch("http://localhost:11434/api/chat-history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          title: `New Chat`,
+        }),
       });
-      const newChatId = response.data.id;
+      const data = await response.json();
+      const newChatId = data.id;
 
       setChatHistory((prevChatHistory) => ({
         ...prevChatHistory,
