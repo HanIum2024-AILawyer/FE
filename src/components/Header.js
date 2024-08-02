@@ -289,7 +289,9 @@ const Header = () => {
             <DropMenuList>
               <Link to="/document">소송장 관리하기</Link>
             </DropMenuList>
-            <DropMenuList>AI에게 첨삭받기</DropMenuList>
+            <DropMenuList>
+              <Link to="/edit">AI에게 첨삭받기</Link>
+            </DropMenuList>
             <DropMenuList></DropMenuList>
             <DropMenuList>
               <Link to="/search">법률정보 검색하기</Link>

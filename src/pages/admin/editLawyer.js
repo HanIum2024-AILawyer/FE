@@ -9,10 +9,12 @@ const SERVER_URL = "http://example.com/api/lawyers"; // 실제 서버 주소로 
 const MainContainer = styled.div`
   text-align: center;
   font-family: Arial, sans-serif;
+  overflow: auto;
+  height: 100vh;
 `;
 
 const Header = styled.header`
-  background-color: #282c34;
+  background-color: gray;
   padding: 20px;
   color: white;
 `;
@@ -50,8 +52,9 @@ const LawyerCardContainer = styled.div`
   margin: 8px;
   background-color: #09132d;
   width: 360px;
-  height: 475px;
+  height: 525px;
   cursor: pointer;
+  position: relative;
 `;
 
 const LawyerPhoto = styled.img`
@@ -71,6 +74,14 @@ const LawyerName = styled.h3`
 const LawyerSpecialty = styled.p`
   color: #fff;
   font-size: 15px;
+`;
+
+const CardButtons = styled.div`
+  position: absolute;
+  bottom: 10px;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
 `;
 
 const LawyerDetailContainer = styled.div`
@@ -144,28 +155,71 @@ const BackButton = styled.button`
   border: 2px solid black;
   border-radius: 10%;
   margin-top: 5px;
-  position: absolute;
-  bottom: 40px;
-  left: 50%;
-  transform: translateX(-50%);
+`;
+
+const AddEditForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+`;
+
+const Input = styled.input`
+  margin: 10px;
+  padding: 10px;
+  width: 300px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+`;
+
+const Textarea = styled.textarea`
+  margin: 10px;
+  padding: 10px;
+  width: 300px;
+  height: 100px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+`;
+
+const Button = styled.button`
+  margin: 10px;
+  padding: 10px 20px;
+  color: white;
+  background-color: #09132d;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 `;
 
 // LawyerCard 컴포넌트 정의
-const LawyerCard = ({ lawyer, onClick }) => {
+const LawyerCard = ({ lawyer, onClick, onDelete }) => {
   return (
-    <LawyerCardContainer onClick={() => onClick(lawyer)}>
+    <LawyerCardContainer>
       <LawyerPhoto src={lawyer.imgSrc} alt={`${lawyer.name}`} />
       <LawyerName>{lawyer.name}</LawyerName>
       <LawyerSpecialty>{lawyer.specialty}</LawyerSpecialty>
+      <CardButtons>
+        <Button onClick={() => onClick(lawyer)}>편집</Button>
+        <Button onClick={() => onDelete(lawyer.id)}>삭제</Button>
+      </CardButtons>
     </LawyerCardContainer>
   );
 };
 
-// IntroLawyerContent 컴포넌트 정의
-const IntroLawyerContent = () => {
+// EditLawyer 컴포넌트 정의
+const EditLawyer = () => {
   const [lawyers, setLawyers] = useState([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
   const [selectedLawyer, setSelectedLawyer] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    specialty: "",
+    imgSrc: "",
+    intro: "",
+    career: "",
+    info: "",
+  });
 
   useEffect(() => {
     fetchLawyers();
@@ -187,6 +241,84 @@ const IntroLawyerContent = () => {
 
   const handleLawyerClick = (lawyer) => {
     setSelectedLawyer(lawyer);
+    setFormData({
+      name: lawyer.name,
+      specialty: lawyer.specialty,
+      imgSrc: lawyer.imgSrc,
+      intro: lawyer.intro,
+      career: lawyer.career.join("\n"),
+      info: lawyer.info.join("\n"),
+    });
+    setIsEditing(true);
+  };
+
+  const handleDeleteLawyer = async (id) => {
+    try {
+      await axios.delete(`${SERVER_URL}/${id}`);
+      setLawyers(lawyers.filter((lawyer) => lawyer.id !== id));
+    } catch (error) {
+      console.error("Failed to delete lawyer", error);
+    }
+  };
+
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleFormSubmit = async (e) => {
+    e.preventDefault();
+    const updatedLawyer = {
+      ...formData,
+      career: formData.career.split("\n"),
+      info: formData.info.split("\n"),
+    };
+
+    try {
+      if (isEditing && selectedLawyer) {
+        const response = await axios.put(
+          `${SERVER_URL}/${selectedLawyer.id}`,
+          updatedLawyer
+        );
+        setLawyers(
+          lawyers.map((lawyer) =>
+            lawyer.id === selectedLawyer.id ? response.data : lawyer
+          )
+        );
+      } else {
+        const response = await axios.post(SERVER_URL, updatedLawyer);
+        setLawyers([...lawyers, response.data]);
+      }
+
+      setIsEditing(false);
+      setSelectedLawyer(null);
+      setFormData({
+        name: "",
+        specialty: "",
+        imgSrc: "",
+        intro: "",
+        career: "",
+        info: "",
+      });
+    } catch (error) {
+      console.error("Failed to save lawyer", error);
+    }
+  };
+
+  const handleAddNewLawyer = () => {
+    setSelectedLawyer(null);
+    setIsEditing(true);
+    setFormData({
+      name: "",
+      specialty: "",
+      imgSrc: "",
+      intro: "",
+      career: "",
+      info: "",
+    });
   };
 
   const filteredLawyers = selectedSpecialty
@@ -210,7 +342,57 @@ const IntroLawyerContent = () => {
           </NavList>
         </Nav>
       </Header>
-      {selectedLawyer ? (
+      <Button onClick={handleAddNewLawyer}>새 변호사 추가</Button>
+      {isEditing ? (
+        <AddEditForm onSubmit={handleFormSubmit}>
+          <Input
+            type="text"
+            name="name"
+            placeholder="이름"
+            value={formData.name}
+            onChange={handleFormChange}
+            required
+          />
+          <Input
+            type="text"
+            name="specialty"
+            placeholder="전문 분야"
+            value={formData.specialty}
+            onChange={handleFormChange}
+            required
+          />
+          <Input
+            type="text"
+            name="imgSrc"
+            placeholder="이미지 URL"
+            value={formData.imgSrc}
+            onChange={handleFormChange}
+            required
+          />
+          <Textarea
+            name="intro"
+            placeholder="소개"
+            value={formData.intro}
+            onChange={handleFormChange}
+            required
+          />
+          <Textarea
+            name="career"
+            placeholder="약력 (줄 바꿈으로 구분)"
+            value={formData.career}
+            onChange={handleFormChange}
+            required
+          />
+          <Textarea
+            name="info"
+            placeholder="정보 (줄 바꿈으로 구분)"
+            value={formData.info}
+            onChange={handleFormChange}
+            required
+          />
+          <Button type="submit">저장</Button>
+        </AddEditForm>
+      ) : selectedLawyer ? (
         <div>
           <LawyerDetailContainer>
             <LawyerDetailPhoto
@@ -254,6 +436,7 @@ const IntroLawyerContent = () => {
               key={index}
               lawyer={lawyer}
               onClick={handleLawyerClick}
+              onDelete={handleDeleteLawyer}
             />
           ))}
         </LawyerGrid>
@@ -262,4 +445,4 @@ const IntroLawyerContent = () => {
   );
 };
 
-export default IntroLawyerContent;
+export default EditLawyer;

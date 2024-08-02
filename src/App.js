@@ -1,6 +1,11 @@
 import React from "react";
 import styled, { createGlobalStyle } from "styled-components";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Route,
+  Routes,
+  useLocation,
+} from "react-router-dom";
 
 import Header from "./components/Header";
 import Footer from "./components/Footer";
@@ -18,6 +23,10 @@ import FaqPage from "./pages/faq/faqPage";
 import InquiryPage from "./pages/inquiry/inquiryPage";
 import SearchPage from "./pages/search/searchPage";
 import ChoicePage from "./pages/Choicechat/ChoicePage";
+import EditPage from "./pages/edit/editPage";
+import AdminMenu from "./pages/admin/adminMenu";
+import EditLawyer from "./pages/admin/editLawyer";
+import Answer from "./pages/admin/answer";
 
 const GlobalStyle = createGlobalStyle`
   html, body {
@@ -42,18 +51,23 @@ const Content = styled.div`
 `;
 
 const App = () => {
+  const location = useLocation();
+  const isSpecialPage =
+    location.pathname === "/admin" ||
+    location.pathname === "/adminmenu" ||
+    location.pathname === "/editlawyer" ||
+    location.pathname === "/answer";
   return (
-    <Router>
+    <>
       <GlobalStyle />
       <AppContainer>
-        <Header />
+        {!isSpecialPage && <Header />}
         <Content>
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<AboutPage />} />
             <Route path="/introLawyer" element={<IntroLawyerPage />} />
-            <Route path="/lo" element={<LoginPage />} />{" "}
-            {/* /login을 /lo로 변경 */}
+            <Route path="/login" element={<LoginPage />} />
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/useRules" element={<UseRulesPage />} />
             <Route path="/withdrawl" element={<WithdrawlPage />} />
@@ -63,12 +77,24 @@ const App = () => {
             <Route path="/inquiry" element={<InquiryPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/choicechat" element={<ChoicePage />} />
+            <Route path="/edit" element={<EditPage />} />
+            <Route path="/adminmenu" element={<AdminMenu />} />
+            <Route path="/editlawyer" element={<EditLawyer />} />
+            <Route path="/answer" element={<Answer />} />
           </Routes>
         </Content>
-        <Footer />
+        {!isSpecialPage && <Footer />}
       </AppContainer>
+    </>
+  );
+};
+
+const AppWrapper = () => {
+  return (
+    <Router>
+      <App />
     </Router>
   );
 };
 
-export default App;
+export default AppWrapper;
