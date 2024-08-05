@@ -53,18 +53,27 @@ const QuestionItem = styled.div`
   border-radius: 5px;
   cursor: pointer;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+`;
+
+const QuestionTitle = styled.div`
+  font-weight: bold;
+  color: black;
+  margin-bottom: 5px;
+  align-self: flex-start;
 `;
 
 const QuestionEmail = styled.div`
   font-weight: bold;
   color: black;
+  align-self: flex-start;
 `;
 
 const QuestionText = styled.div`
   margin-top: 10px;
   color: black;
+  align-self: flex-start;
 `;
 
 const AnswerContainer = styled.div`
@@ -72,6 +81,9 @@ const AnswerContainer = styled.div`
   padding: 20px;
   margin: 10px 0;
   border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 `;
 
 const AnswerTextArea = styled.textarea`
@@ -97,7 +109,7 @@ const AnsweredButton = styled(Button)`
   background-color: #999;
 `;
 
-const App = () => {
+const Answer = () => {
   const [questions, setQuestions] = useState([]);
   const [selectedQuestion, setSelectedQuestion] = useState(null);
   const [answer, setAnswer] = useState("");
@@ -170,18 +182,16 @@ const App = () => {
         {filteredQuestions.map((question) => (
           <div key={question.id}>
             <QuestionItem onClick={() => handleQuestionClick(question)}>
-              <div>
-                <QuestionEmail>{question.email}</QuestionEmail>
-                <QuestionText>{question.text}</QuestionText>
-              </div>
+              <QuestionTitle>{question.title}</QuestionTitle>
+              <QuestionEmail>{question.email}</QuestionEmail>
+              <QuestionText>{question.content}</QuestionText>
               {question.answered && <AnsweredButton>답변 완료</AnsweredButton>}
             </QuestionItem>
             {selectedQuestion && selectedQuestion.id === question.id && (
               <AnswerContainer>
-                <div>
-                  <QuestionEmail>{selectedQuestion.email}</QuestionEmail>
-                  <QuestionText>{selectedQuestion.text}</QuestionText>
-                </div>
+                <QuestionTitle>{selectedQuestion.title}</QuestionTitle>
+                <QuestionEmail>{selectedQuestion.email}</QuestionEmail>
+                <QuestionText>{selectedQuestion.content}</QuestionText>
                 <AnswerTextArea
                   placeholder="답변하기..."
                   value={answer}
@@ -197,4 +207,4 @@ const App = () => {
   );
 };
 
-export default App;
+export default Answer;
