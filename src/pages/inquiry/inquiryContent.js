@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import styled from "styled-components";
+import { Link } from "react-router-dom"; // react-router-dom에서 Link 컴포넌트를 가져옵니다.
 
 const Container = styled.div`
   display: flex;
@@ -7,6 +8,8 @@ const Container = styled.div`
   align-items: center;
   margin-top: 20px;
   color: white;
+  min-height: 80vh; /* 페이지 하단에 버튼을 배치하기 위한 공간 확보 */
+  position: relative; /* 버튼을 절대 위치로 배치하기 위해 부모 컨테이너에 상대 위치 지정 */
 `;
 
 const Title = styled.h2`
@@ -42,12 +45,34 @@ const Button = styled.button`
   padding: 10px 20px;
   font-size: 16px;
   color: white;
-  background-color: #007bff; /* 버튼 색상 */
+  background-color: #007bff; /* 제출 버튼 색상 */
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-bottom: 10px; /* 제출 버튼과 하단 버튼 간 간격 */
+  &:hover {
+    background-color: #0056b3; /* 제출 버튼 호버 색상 */
+  }
+`;
+
+const BottomButtonContainer = styled.div`
+  position: absolute;
+  bottom: 20px; /* 하단 버튼을 페이지 하단에 고정 */
+  display: flex;
+  justify-content: center;
+  width: 100%;
+`;
+
+const BottomButton = styled.button`
+  padding: 10px 20px;
+  font-size: 16px;
+  color: white;
+  background-color: #ccc; /* 회색 버튼 색상 */
   border: none;
   border-radius: 5px;
   cursor: pointer;
   &:hover {
-    background-color: #0056b3; /* 버튼 호버 색상 */
+    background-color: #aaa; /* 회색 버튼 호버 색상 */
   }
 `;
 
@@ -57,22 +82,22 @@ const InquiryContent = () => {
   const handleSubmit = async () => {
     if (window.confirm("제출하시겠습니까? (취소할 수 없습니다)")) {
       try {
-        const response = await fetch(
-          "https://your-server-endpoint/api/inquiry",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(inquiry),
-          }
-        );
+        const response = await fetch("http://localhost:8080/api/v1/inquery", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("authToken")}`, // 로컬 스토리지에서 토큰 가져오기
+          },
+          body: JSON.stringify(inquiry),
+        });
 
-        if (response.ok) {
+        const result = await response.json();
+
+        if (result.is_success) {
           alert("제출이 완료되었습니다.");
           setInquiry({ title: "", content: "" }); // 입력 필드 초기화
         } else {
-          alert("제출 중 오류가 발생했습니다. 다시 시도해 주세요.");
+          alert("제출 중 오류가 발생했습니다. 다시 시도해 주세요.(형식오류)");
         }
       } catch (error) {
         alert("제출 중 오류가 발생했습니다. 다시 시도해 주세요.");
@@ -94,6 +119,11 @@ const InquiryContent = () => {
         onChange={(e) => setInquiry({ ...inquiry, content: e.target.value })}
       />
       <Button onClick={handleSubmit}>제출</Button>
+      <BottomButtonContainer>
+        <Link to="/answered">
+          <BottomButton>답변 받은 문의 확인</BottomButton>
+        </Link>
+      </BottomButtonContainer>
     </Container>
   );
 };

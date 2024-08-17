@@ -86,11 +86,13 @@ const LoginPageContent = () => {
   const navigate = useNavigate();
 
   const handleOAuthLogin = (provider) => {
-    window.location.href = `http://localhost:8080/auth/${provider}`;
-  };
-
-  const handleAdminLogin = () => {
-    navigate("/admin");
+    if (provider === "kakao" || provider === "google") {
+      // 카카오 또는 구글 로그인 처리 서버로 리디렉션
+      window.location.href = `http://54.180.142.197:8080/oauth2/authorization/${provider}`;
+    } else {
+      // 기타 소셜 로그인 처리
+      window.location.href = `http://54.180.142.197:8080/oauth2/authorization/${provider}`;
+    }
   };
 
   useEffect(() => {
@@ -98,9 +100,10 @@ const LoginPageContent = () => {
     const token = queryParams.get("token");
     if (token) {
       localStorage.setItem("jwt", token);
-      // 안전페이지로 리디렉트함
+      // 추가적으로 안전 페이지로 리디렉트하거나 필요한 작업을 수행
+      navigate("/secure-page"); // 예시: 안전 페이지로 리디렉트
     }
-  }, []);
+  }, [navigate]);
 
   return (
     <>
@@ -112,30 +115,27 @@ const LoginPageContent = () => {
           소셜 로그인으로 이용하실 수 있습니다
         </h3>
         <Container>
-          <LoginButton
-            className="kakao"
-            onClick={() => handleOAuthLogin("kakao")}
-          >
-            <img src="/assets/loginImage/Kakao_icon.png" alt="Kakao" />
-            <span>카카오 계정으로 가입 / 로그인</span>
-          </LoginButton>
-          <LoginButton
-            className="naver"
-            onClick={() => handleOAuthLogin("naver")}
-          >
-            <img src="/assets/loginImage/Naver_icon.png" alt="Naver" />
-            <span>네이버 계정으로 가입 / 로그인</span>
-          </LoginButton>
-          <LoginButton
-            className="google"
-            onClick={() => handleOAuthLogin("google")}
-          >
-            <img src="/assets/loginImage/Google_icon.png" alt="Google" />
-            <span>구글 계정으로 가입 / 로그인</span>
-          </LoginButton>
+          {["kakao", "naver", "google"].map((provider) => (
+            <LoginButton
+              key={provider}
+              className={provider}
+              onClick={() => handleOAuthLogin(provider)}
+            >
+              <img
+                src={`/assets/loginImage/${
+                  provider.charAt(0).toUpperCase() + provider.slice(1)
+                }_icon.png`}
+                alt={provider}
+              />
+              <span>
+                {provider.charAt(0).toUpperCase() + provider.slice(1)} 계정으로
+                가입 / 로그인
+              </span>
+            </LoginButton>
+          ))}
         </Container>
       </WhiteBox>
-      <AdminLoginText onClick={handleAdminLogin}>
+      <AdminLoginText onClick={() => navigate("/admin")}>
         관리자로 로그인
       </AdminLoginText>
     </>

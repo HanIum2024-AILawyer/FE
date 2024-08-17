@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FaBars } from "react-icons/fa";
 import { IoMdPerson } from "react-icons/io";
+import axios from "axios";
 
 const TopBar = styled.div`
   display: flex;
@@ -17,6 +18,12 @@ const TopBar = styled.div`
     color: #fff;
     text-decoration: none;
     margin-right: 30px;
+
+    &:hover,
+    &:visited {
+      color: #fff;
+      text-decoration: none;
+    }
   }
 `;
 
@@ -59,12 +66,10 @@ const Nav = styled.nav`
     text-decoration: none;
     font-size: 18px;
 
-    &:hover {
-      text-decoration: none;
-    }
-
+    &:hover,
     &:visited {
       color: #fff;
+      text-decoration: none;
     }
   }
 `;
@@ -99,12 +104,11 @@ const DropdownBox = styled.div`
     color: #fff;
     text-decoration: none;
     margin: 5px 0;
-    &:hover {
-      text-decoration: none;
-    }
 
+    &:hover,
     &:visited {
       color: #fff;
+      text-decoration: none;
     }
   }
 `;
@@ -128,12 +132,11 @@ const MenuDropdownBox = styled.div`
     color: #fff;
     text-decoration: none;
     margin: 5px 0;
-    &:hover {
-      text-decoration: none;
-    }
 
+    &:hover,
     &:visited {
       color: #fff;
+      text-decoration: none;
     }
   }
 `;
@@ -162,18 +165,45 @@ const DropMenuList = styled.div`
   padding: 10px;
   background-color: #09132d;
   color: white;
+
+  a {
+    color: #fff;
+    text-decoration: none;
+
+    &:hover,
+    &:visited {
+      color: #fff;
+      text-decoration: none;
+    }
+  }
 `;
 
 const Header = () => {
-  const [isLoggedIn, setIsLoggedIn] = useState(true);
+  const navigate = useNavigate();
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
   const menuDropdownRef = useRef(null);
   const dropMenuRef = useRef(null);
   const headerContainerRef = useRef(null);
 
+  useEffect(() => {
+    // 로그인 상태 확인 (예시로 localStorage를 사용)
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      setIsLoggedIn(true);
+    }
+  }, []);
+
   const toggleDropdown = (dropdownType) => {
-    setActiveDropdown((prev) => (prev === dropdownType ? null : dropdownType));
+    if (!isLoggedIn) {
+      alert("로그인 하신 다음 이용해주세요");
+      navigate("/login"); // 로그인 페이지로 이동
+    } else {
+      setActiveDropdown((prev) =>
+        prev === dropdownType ? null : dropdownType
+      );
+    }
   };
 
   const handleMouseEnter = () => {
@@ -206,10 +236,27 @@ const Header = () => {
     }
   };
 
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    // 로그아웃 후 리다이렉트가 필요하면 아래 코드를 사용하세요.
-    // history.push("/login");
+  const handleLogout = async () => {
+    const accessToken = localStorage.getItem("kakaoAccessToken");
+    try {
+      await axios.get("http://54.180.142.197:8080/logout", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      // 로그아웃 성공 시 로컬 스토리지에서 토큰 제거
+      localStorage.removeItem("kakaoAccessToken");
+      localStorage.removeItem("kakaoRefreshToken");
+      localStorage.removeItem("kakaoUserId");
+      localStorage.removeItem("kakaoUserEmail");
+
+      // 로그아웃 후 로그인 페이지로 리디렉트
+      setIsLoggedIn(false);
+      navigate("/login");
+    } catch (error) {
+      console.error("로그아웃 실패:", error);
+      // 로그아웃 실패 시 추가적인 에러 처리
+    }
   };
 
   useEffect(() => {
@@ -258,7 +305,7 @@ const Header = () => {
             <DropdownBox ref={dropdownRef}>
               {isLoggedIn ? (
                 <>
-                  <Link to="/logout" onClick={handleLogout}>
+                  <Link to="#" onClick={handleLogout}>
                     로그아웃
                   </Link>
                   <Link to="/withdrawl">회원탈퇴</Link>

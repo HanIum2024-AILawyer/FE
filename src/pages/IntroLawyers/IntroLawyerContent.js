@@ -1,9 +1,54 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-import axios from "axios";
 
-// 서버 주소 설정
-const SERVER_URL = "http://example.com/api/lawyers"; // 실제 서버 주소로 대체하세요.
+// 예시 데이터 정의
+const exampleLawyers = [
+  {
+    layerId: "1",
+    fieldTag: "상속",
+    lawyerImageUrl: "https://via.placeholder.com/360x380.png?text=Lawyer+1",
+    lawyerName: "김변호사",
+    lawyerfield: "상속",
+  },
+  {
+    layerId: "2",
+    fieldTag: "이혼",
+    lawyerImageUrl: "https://via.placeholder.com/360x380.png?text=Lawyer+2",
+    lawyerName: "박변호사",
+    lawyerfield: "이혼",
+  },
+  {
+    layerId: "3",
+    fieldTag: "성범죄",
+    lawyerImageUrl: "https://via.placeholder.com/360x380.png?text=Lawyer+3",
+    lawyerName: "이변호사",
+    lawyerfield: "성범죄",
+  },
+];
+
+const exampleLawyerDetails = {
+  1: {
+    lawyerImage: "https://via.placeholder.com/360x380.png?text=Lawyer+1",
+    lawyerName: "김변호사",
+    lawyerTag: "상속 전문가",
+    lawyerProfile: "서울대학교 법학과 졸업, 법무법인 상속파트 근무",
+    lawyerExInfo: "서울시 강남구 테헤란로 123, 연락처: 02-1234-5678",
+  },
+  2: {
+    lawyerImage: "https://via.placeholder.com/360x380.png?text=Lawyer+2",
+    lawyerName: "박변호사",
+    lawyerTag: "이혼 전문가",
+    lawyerProfile: "서울대학교 법학과 졸업, 법무법인 이혼파트 근무",
+    lawyerExInfo: "서울시 강남구 테헤란로 456, 연락처: 02-2345-6789",
+  },
+  3: {
+    lawyerImage: "https://via.placeholder.com/360x380.png?text=Lawyer+3",
+    lawyerName: "이변호사",
+    lawyerTag: "성범죄 전문가",
+    lawyerProfile: "서울대학교 법학과 졸업, 법무법인 성범죄파트 근무",
+    lawyerExInfo: "서울시 강남구 테헤란로 789, 연락처: 02-3456-7890",
+  },
+};
 
 // 스타일 정의
 const MainContainer = styled.div`
@@ -92,8 +137,6 @@ const LawyerDetailPhoto = styled.img`
 `;
 
 const LawyerDetailInfo = styled.div`
-  margin-left: 10px;
-  text-align: left;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -103,11 +146,13 @@ const LawyerDetailInfo = styled.div`
 const ListsContainer = styled.div`
   display: flex;
   justify-content: space-between;
+  margin-top: 10px;
 `;
 
 const InfoList = styled.ul`
   color: #666;
   width: 45%;
+  margin-left: auto;
 `;
 
 const CareerList = styled.ul`
@@ -153,10 +198,10 @@ const BackButton = styled.button`
 // LawyerCard 컴포넌트 정의
 const LawyerCard = ({ lawyer, onClick }) => {
   return (
-    <LawyerCardContainer onClick={() => onClick(lawyer)}>
-      <LawyerPhoto src={lawyer.imgSrc} alt={`${lawyer.name}`} />
-      <LawyerName>{lawyer.name}</LawyerName>
-      <LawyerSpecialty>{lawyer.specialty}</LawyerSpecialty>
+    <LawyerCardContainer onClick={() => onClick(lawyer.layerId)}>
+      <LawyerPhoto src={lawyer.lawyerImageUrl} alt={`${lawyer.lawyerName}`} />
+      <LawyerName>{lawyer.lawyerName}</LawyerName>
+      <LawyerSpecialty>{lawyer.lawyerfield}</LawyerSpecialty>
     </LawyerCardContainer>
   );
 };
@@ -171,13 +216,15 @@ const IntroLawyerContent = () => {
     fetchLawyers();
   }, []);
 
-  const fetchLawyers = async () => {
-    try {
-      const response = await axios.get(SERVER_URL);
-      setLawyers(response.data);
-    } catch (error) {
-      console.error("Failed to fetch lawyers", error);
-    }
+  const fetchLawyers = () => {
+    // 서버가 연결되지 않은 경우, 예시 데이터를 사용합니다.
+    setLawyers(exampleLawyers);
+  };
+
+  const fetchLawyerDetails = (lawyerId) => {
+    // 예시 데이터에서 해당 변호사 상세 정보 가져오기
+    const lawyerDetail = exampleLawyerDetails[lawyerId];
+    setSelectedLawyer(lawyerDetail);
   };
 
   const handleSpecialtyClick = (specialty) => {
@@ -185,12 +232,12 @@ const IntroLawyerContent = () => {
     setSelectedLawyer(null); // 세부사항 보기 상태 초기화
   };
 
-  const handleLawyerClick = (lawyer) => {
-    setSelectedLawyer(lawyer);
+  const handleLawyerClick = (lawyerId) => {
+    fetchLawyerDetails(lawyerId); // 변호사 상세 정보 불러오기
   };
 
   const filteredLawyers = selectedSpecialty
-    ? lawyers.filter((lawyer) => lawyer.specialty === selectedSpecialty)
+    ? lawyers.filter((lawyer) => lawyer.fieldTag === selectedSpecialty)
     : lawyers;
 
   return (
@@ -214,29 +261,32 @@ const IntroLawyerContent = () => {
         <div>
           <LawyerDetailContainer>
             <LawyerDetailPhoto
-              src={selectedLawyer.imgSrc}
-              alt={selectedLawyer.name}
+              src={selectedLawyer.lawyerImage}
+              alt={selectedLawyer.lawyerName}
             />
             <LawyerDetailInfo>
               <HeaderSpecialtyContainer>
-                <LawyerDetailHeader>{selectedLawyer.name}</LawyerDetailHeader>
+                <LawyerDetailHeader>
+                  {selectedLawyer.lawyerName}
+                </LawyerDetailHeader>
                 <LawyerDetailSpecialty>
-                  {selectedLawyer.specialty}
+                  {selectedLawyer.lawyerTag}
                 </LawyerDetailSpecialty>
               </HeaderSpecialtyContainer>
-              <LawyerDetailText>{selectedLawyer.intro}</LawyerDetailText>
               <ListsContainer>
                 <CareerList>
-                  <h2>약력</h2>
-                  {selectedLawyer.career &&
-                    selectedLawyer.career.map((item, index) => (
+                  <h2>경력</h2>
+                  {selectedLawyer.lawyerProfile
+                    .split(", ")
+                    .map((item, index) => (
                       <li key={index}>{item}</li>
                     ))}
                 </CareerList>
                 <InfoList>
                   <h2>정보</h2>
-                  {selectedLawyer.info &&
-                    selectedLawyer.info.map((item, index) => (
+                  {selectedLawyer.lawyerExInfo
+                    .split(", ")
+                    .map((item, index) => (
                       <li key={index}>{item}</li>
                     ))}
                 </InfoList>

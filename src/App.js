@@ -13,7 +13,7 @@ import Footer from "./components/Footer";
 import HomePage from "./pages/Home/HomePage";
 import AboutPage from "./pages/About/AboutPage";
 import IntroLawyerPage from "./pages/IntroLawyers/IntroLawyerPage";
-import LoginPage from "./pages/Login/LoginPage"; // 이곳에서 /login을 /lo로 바꾸고 싶어요.
+import LoginPage from "./pages/Login/LoginPage";
 import AdminPage from "./pages/Login/AdminPage";
 import UseRulesPage from "./pages/useRules/useRulesPage";
 import WithdrawlPage from "./pages/withdrawl/withdrawlPage";
@@ -27,6 +27,8 @@ import EditPage from "./pages/edit/editPage";
 import AdminMenu from "./pages/admin/adminMenu";
 import EditLawyer from "./pages/admin/editLawyer";
 import Answer from "./pages/admin/answer";
+
+import Answered from "./pages/inquiry/answered";
 
 const GlobalStyle = createGlobalStyle`
   html, body {
@@ -81,6 +83,7 @@ const App = () => {
             <Route path="/adminmenu" element={<AdminMenu />} />
             <Route path="/editlawyer" element={<EditLawyer />} />
             <Route path="/answer" element={<Answer />} />
+            <Route path="/answered" element={<Answered />} />
           </Routes>
         </Content>
         {!isSpecialPage && <Footer />}
