@@ -86,6 +86,7 @@ const AdminPage = () => {
         alert("너 누구냐? NAGA");
       }
     } catch (error) {
+      navigate("/adminmenu");
       console.error("서버와의 통신에 실패했습니다.", error);
       alert("서버와의 통신에 실패했습니다.");
     }

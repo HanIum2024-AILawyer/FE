@@ -4,6 +4,8 @@ import axios from "axios";
 
 // 서버 주소 설정
 const SERVER_URL = "http://example.com/api/lawyers"; // 실제 서버 주소로 대체하세요.
+const DELETE_URL = "http://localhost:8080/admin/lawyer";
+const MODIFY_URL = "http://localhost:8080/admin/lawyer/modification";
 
 // 스타일 정의
 const MainContainer = styled.div`
@@ -213,12 +215,11 @@ const EditLawyer = () => {
   const [selectedLawyer, setSelectedLawyer] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: "",
-    specialty: "",
-    imgSrc: "",
-    intro: "",
-    career: "",
-    info: "",
+    lawyerName: "",
+    lawyerTag: "",
+    lawyerImage: "",
+    lawyerProfile: "",
+    lawyerExInfo: "",
   });
 
   useEffect(() => {
@@ -242,19 +243,18 @@ const EditLawyer = () => {
   const handleLawyerClick = (lawyer) => {
     setSelectedLawyer(lawyer);
     setFormData({
-      name: lawyer.name,
-      specialty: lawyer.specialty,
-      imgSrc: lawyer.imgSrc,
-      intro: lawyer.intro,
-      career: lawyer.career.join("\n"),
-      info: lawyer.info.join("\n"),
+      lawyerName: lawyer.lawyerName,
+      lawyerTag: lawyer.lawyerTag,
+      lawyerImage: lawyer.lawyerImage,
+      lawyerProfile: lawyer.lawyerProfile.join("\n"),
+      lawyerExInfo: lawyer.lawyerExInfo.join("\n"),
     });
     setIsEditing(true);
   };
 
   const handleDeleteLawyer = async (id) => {
     try {
-      await axios.delete(`${SERVER_URL}/${id}`);
+      await axios.delete(`${DELETE_URL}/${id}`);
       setLawyers(lawyers.filter((lawyer) => lawyer.id !== id));
     } catch (error) {
       console.error("Failed to delete lawyer", error);
@@ -272,15 +272,18 @@ const EditLawyer = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     const updatedLawyer = {
-      ...formData,
-      career: formData.career.split("\n"),
-      info: formData.info.split("\n"),
+      lawyerName: formData.lawyerName,
+      lawyerTag: formData.lawyerTag,
+      lawyerImage: formData.lawyerImage,
+      lawyerProfile: formData.lawyerProfile.split("\n"),
+      lawyerExInfo: formData.lawyerExInfo.split("\n"),
     };
 
     try {
       if (isEditing && selectedLawyer) {
-        const response = await axios.put(
-          `${SERVER_URL}/${selectedLawyer.id}`,
+        // 변호사 정보를 수정하는 POST 요청
+        const response = await axios.post(
+          `${MODIFY_URL}/${selectedLawyer.id}`,
           updatedLawyer
         );
         setLawyers(
@@ -289,6 +292,7 @@ const EditLawyer = () => {
           )
         );
       } else {
+        // 새로운 변호사 추가하는 POST 요청
         const response = await axios.post(SERVER_URL, updatedLawyer);
         setLawyers([...lawyers, response.data]);
       }
@@ -296,12 +300,11 @@ const EditLawyer = () => {
       setIsEditing(false);
       setSelectedLawyer(null);
       setFormData({
-        name: "",
-        specialty: "",
-        imgSrc: "",
-        intro: "",
-        career: "",
-        info: "",
+        lawyerName: "",
+        lawyerTag: "",
+        lawyerImage: "",
+        lawyerProfile: "",
+        lawyerExInfo: "",
       });
     } catch (error) {
       console.error("Failed to save lawyer", error);
@@ -312,17 +315,16 @@ const EditLawyer = () => {
     setSelectedLawyer(null);
     setIsEditing(true);
     setFormData({
-      name: "",
-      specialty: "",
-      imgSrc: "",
-      intro: "",
-      career: "",
-      info: "",
+      lawyerName: "",
+      lawyerTag: "",
+      lawyerImage: "",
+      lawyerProfile: "",
+      lawyerExInfo: "",
     });
   };
 
   const filteredLawyers = selectedSpecialty
-    ? lawyers.filter((lawyer) => lawyer.specialty === selectedSpecialty)
+    ? lawyers.filter((lawyer) => lawyer.lawyerTag === selectedSpecialty)
     : lawyers;
 
   return (
@@ -347,46 +349,39 @@ const EditLawyer = () => {
         <AddEditForm onSubmit={handleFormSubmit}>
           <Input
             type="text"
-            name="name"
+            name="lawyerName"
             placeholder="이름"
-            value={formData.name}
+            value={formData.lawyerName}
             onChange={handleFormChange}
             required
           />
           <Input
             type="text"
-            name="specialty"
+            name="lawyerTag"
             placeholder="전문 분야"
-            value={formData.specialty}
+            value={formData.lawyerTag}
             onChange={handleFormChange}
             required
           />
           <Input
             type="text"
-            name="imgSrc"
+            name="lawyerImage"
             placeholder="이미지 URL"
-            value={formData.imgSrc}
+            value={formData.lawyerImage}
             onChange={handleFormChange}
             required
           />
           <Textarea
-            name="intro"
-            placeholder="소개"
-            value={formData.intro}
-            onChange={handleFormChange}
-            required
-          />
-          <Textarea
-            name="career"
+            name="lawyerProfile"
             placeholder="약력 (줄 바꿈으로 구분)"
-            value={formData.career}
+            value={formData.lawyerProfile}
             onChange={handleFormChange}
             required
           />
           <Textarea
-            name="info"
+            name="lawyerExInfo"
             placeholder="정보 (줄 바꿈으로 구분)"
-            value={formData.info}
+            value={formData.lawyerExInfo}
             onChange={handleFormChange}
             required
           />
@@ -396,29 +391,30 @@ const EditLawyer = () => {
         <div>
           <LawyerDetailContainer>
             <LawyerDetailPhoto
-              src={selectedLawyer.imgSrc}
-              alt={selectedLawyer.name}
+              src={selectedLawyer.lawyerImage}
+              alt={selectedLawyer.lawyerName}
             />
             <LawyerDetailInfo>
               <HeaderSpecialtyContainer>
-                <LawyerDetailHeader>{selectedLawyer.name}</LawyerDetailHeader>
+                <LawyerDetailHeader>
+                  {selectedLawyer.lawyerName}
+                </LawyerDetailHeader>
                 <LawyerDetailSpecialty>
-                  {selectedLawyer.specialty}
+                  {selectedLawyer.lawyerTag}
                 </LawyerDetailSpecialty>
               </HeaderSpecialtyContainer>
-              <LawyerDetailText>{selectedLawyer.intro}</LawyerDetailText>
               <ListsContainer>
                 <CareerList>
                   <h2>약력</h2>
-                  {selectedLawyer.career &&
-                    selectedLawyer.career.map((item, index) => (
+                  {selectedLawyer.lawyerProfile &&
+                    selectedLawyer.lawyerProfile.map((item, index) => (
                       <li key={index}>{item}</li>
                     ))}
                 </CareerList>
                 <InfoList>
                   <h2>정보</h2>
-                  {selectedLawyer.info &&
-                    selectedLawyer.info.map((item, index) => (
+                  {selectedLawyer.lawyerExInfo &&
+                    selectedLawyer.lawyerExInfo.map((item, index) => (
                       <li key={index}>{item}</li>
                     ))}
                 </InfoList>
