@@ -1,103 +1,38 @@
 import React from "react";
-import styled, { createGlobalStyle } from "styled-components";
-import {
-  BrowserRouter as Router,
-  Route,
-  Routes,
-  useLocation,
-} from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Loginpage from "./pages/Loginpage";
+import Mypage from "./pages/Mypage";
+import Joinpage from "./pages/Joinpage";
+import Joinpage2 from "./pages/Joinpage2";
+import Notification from "./pages/notification";
+import Home from "./pages/Home/App";
+import PostDetail from "./pages/Home/PostDetail";
+import WritePage from "./pages/writePage";
+import FindPw from "./pages/findpw";
+import ProfileChangePage from "./pages/ProfileChangePage";
 
-import Header from "./components/Header";
-import Footer from "./components/Footer";
+// 꼭 페이지마다 import 시키세요
+// 그리고 path를 설정하세요
 
-import HomePage from "./pages/Home/HomePage";
-import AboutPage from "./pages/About/AboutPage";
-import IntroLawyerPage from "./pages/IntroLawyers/IntroLawyerPage";
-import LoginPage from "./pages/Login/LoginPage";
-import AdminPage from "./pages/Login/AdminPage";
-import UseRulesPage from "./pages/useRules/useRulesPage";
-import WithdrawlPage from "./pages/withdrawl/withdrawlPage";
-import ChatPage from "./pages/chat/chatPage";
-import DocumentPage from "./pages/document/DocumentPage";
-import FaqPage from "./pages/faq/faqPage";
-import InquiryPage from "./pages/inquiry/inquiryPage";
-import SearchPage from "./pages/search/searchPage";
-import ChoicePage from "./pages/Choicechat/ChoicePage";
-import EditPage from "./pages/edit/editPage";
-import AdminMenu from "./pages/admin/adminMenu";
-import EditLawyer from "./pages/admin/editLawyer";
-import Answer from "./pages/admin/answer";
-
-import Answered from "./pages/inquiry/answered";
-
-const GlobalStyle = createGlobalStyle`
-  html, body {
-    overflow: hidden;
-  }
-`;
-
-const AppContainer = styled.div`
-  background: url(${process.env.PUBLIC_URL}/assets/background.png) no-repeat
-    center center;
-  background-size: cover;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  color: #fff;
-  text-align: center;
-  overflow: hidden; /* 스크롤바 숨기기 */
-`;
-
-const Content = styled.div`
-  flex: 1;
-`;
-
-const App = () => {
-  const location = useLocation();
-  const isSpecialPage =
-    location.pathname === "/admin" ||
-    location.pathname === "/adminmenu" ||
-    location.pathname === "/editlawyer" ||
-    location.pathname === "/answer";
-  return (
-    <>
-      <GlobalStyle />
-      <AppContainer>
-        {!isSpecialPage && <Header />}
-        <Content>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/about" element={<AboutPage />} />
-            <Route path="/introLawyer" element={<IntroLawyerPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/admin" element={<AdminPage />} />
-            <Route path="/useRules" element={<UseRulesPage />} />
-            <Route path="/withdrawl" element={<WithdrawlPage />} />
-            <Route path="/chat" element={<ChatPage />} />
-            <Route path="/document" element={<DocumentPage />} />
-            <Route path="/faq" element={<FaqPage />} />
-            <Route path="/inquiry" element={<InquiryPage />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/choicechat" element={<ChoicePage />} />
-            <Route path="/edit" element={<EditPage />} />
-            <Route path="/adminmenu" element={<AdminMenu />} />
-            <Route path="/editlawyer" element={<EditLawyer />} />
-            <Route path="/answer" element={<Answer />} />
-            <Route path="/answered" element={<Answered />} />
-          </Routes>
-        </Content>
-        {!isSpecialPage && <Footer />}
-      </AppContainer>
-    </>
-  );
-};
-
-const AppWrapper = () => {
+function App() {
   return (
     <Router>
-      <App />
+      <Routes>
+        <Route path="/" element={<Loginpage />} />
+        <Route path="/mypage" element={<Mypage />} />
+        <Route path="/joinpage" element={<Joinpage />} /> {/* 소문자로 변경 */}
+        <Route path="/joinpage2" element={<Joinpage2 />} />{" "}
+        {/* 소문자로 변경 */}
+        <Route path="/notification" element={<Notification />} />
+        <Route path="/home" element={<Home />} />
+        <Route path="/findpw" element={<FindPw />} />
+        <Route path="/post/:postId" element={<PostDetail />} />
+        <Route  path="/writepage" element={<WritePage />} />{" "}
+        <Route path="/profilechange" element={<ProfileChangePage />} />
+        {/* 컴포넌트 이름의 첫 글자를 대문자로 변경, 경로 소문자로 변경 */}
+      </Routes>
     </Router>
   );
-};
+}
 
-export default AppWrapper;
+export default App;
