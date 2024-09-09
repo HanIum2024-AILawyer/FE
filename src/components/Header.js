@@ -155,7 +155,7 @@ const DropMenuStyle = styled.div`
 const DropMenuContainer = styled.div`
   position: relative;
   display: grid;
-  grid-template-rows: repeat(2, 40px);
+  grid-template-rows: repeat(3, 40px);
   grid-template-columns: repeat(3, 170px);
   white-space: nowrap;
   left: 50%;
@@ -343,6 +343,11 @@ const Header = () => {
             <DropMenuList>
               <Link to="/search">법률정보 검색하기</Link>
             </DropMenuList>
+            <DropMenuList>
+              <Link to="/make">AI로 소송장 만들기</Link>
+            </DropMenuList>
+            <DropMenuList></DropMenuList>
+            <DropMenuList></DropMenuList>
           </DropMenuContainer>
         </DropMenuStyle>
       )}
