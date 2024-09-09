@@ -1,54 +1,6 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
-
-// 예시 데이터 정의
-const exampleLawyers = [
-  {
-    layerId: "1",
-    fieldTag: "상속",
-    lawyerImageUrl: "https://via.placeholder.com/360x380.png?text=Lawyer+1",
-    lawyerName: "김변호사",
-    lawyerfield: "상속",
-  },
-  {
-    layerId: "2",
-    fieldTag: "이혼",
-    lawyerImageUrl: "https://via.placeholder.com/360x380.png?text=Lawyer+2",
-    lawyerName: "박변호사",
-    lawyerfield: "이혼",
-  },
-  {
-    layerId: "3",
-    fieldTag: "성범죄",
-    lawyerImageUrl: "https://via.placeholder.com/360x380.png?text=Lawyer+3",
-    lawyerName: "이변호사",
-    lawyerfield: "성범죄",
-  },
-];
-
-const exampleLawyerDetails = {
-  1: {
-    lawyerImage: "https://via.placeholder.com/360x380.png?text=Lawyer+1",
-    lawyerName: "김변호사",
-    lawyerTag: "상속 전문가",
-    lawyerProfile: "서울대학교 법학과 졸업, 법무법인 상속파트 근무",
-    lawyerExInfo: "서울시 강남구 테헤란로 123, 연락처: 02-1234-5678",
-  },
-  2: {
-    lawyerImage: "https://via.placeholder.com/360x380.png?text=Lawyer+2",
-    lawyerName: "박변호사",
-    lawyerTag: "이혼 전문가",
-    lawyerProfile: "서울대학교 법학과 졸업, 법무법인 이혼파트 근무",
-    lawyerExInfo: "서울시 강남구 테헤란로 456, 연락처: 02-2345-6789",
-  },
-  3: {
-    lawyerImage: "https://via.placeholder.com/360x380.png?text=Lawyer+3",
-    lawyerName: "이변호사",
-    lawyerTag: "성범죄 전문가",
-    lawyerProfile: "서울대학교 법학과 졸업, 법무법인 성범죄파트 근무",
-    lawyerExInfo: "서울시 강남구 테헤란로 789, 연락처: 02-3456-7890",
-  },
-};
+import axios from "axios";
 
 // 스타일 정의
 const MainContainer = styled.div`
@@ -176,11 +128,6 @@ const HeaderSpecialtyContainer = styled.div`
   margin-bottom: 10px;
 `;
 
-const LawyerDetailText = styled.p`
-  color: #666;
-  margin-bottom: 10px;
-`;
-
 const BackButton = styled.button`
   width: 120px;
   height: 30px;
@@ -216,15 +163,26 @@ const IntroLawyerContent = () => {
     fetchLawyers();
   }, []);
 
-  const fetchLawyers = () => {
-    // 서버가 연결되지 않은 경우, 예시 데이터를 사용합니다.
-    setLawyers(exampleLawyers);
+  const fetchLawyers = async () => {
+    try {
+      const response = await axios.get(
+        "http://localhost:8080/api/v1/lawyer/lawyerlist"
+      );
+      setLawyers(response.data);
+    } catch (error) {
+      console.error("Failed to fetch lawyers", error);
+    }
   };
 
-  const fetchLawyerDetails = (lawyerId) => {
-    // 예시 데이터에서 해당 변호사 상세 정보 가져오기
-    const lawyerDetail = exampleLawyerDetails[lawyerId];
-    setSelectedLawyer(lawyerDetail);
+  const fetchLawyerDetails = async (lawyerId) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:8080/api/v1/lawyer/info/${lawyerId}`
+      );
+      setSelectedLawyer(response.data);
+    } catch (error) {
+      console.error("Failed to fetch lawyer details", error);
+    }
   };
 
   const handleSpecialtyClick = (specialty) => {

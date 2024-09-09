@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
+import SockJS from "sockjs-client";
+import { Stomp } from "@stomp/stompjs";
 
 // Styled Components for Sidebar
 const SidebarContainer = styled.div`
@@ -133,27 +135,52 @@ const ChatApp = () => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [chatHistory, setChatHistory] = useState({});
+  const [stompClient, setStompClient] = useState(null);
 
   const chatList = Object.keys(chatHistory); // 대화 리스트
 
   useEffect(() => {
-    // Load chat history on initial render
-    fetch("http://localhost:11434/api/chat-history")
-      .then((response) => response.json())
-      .then((data) => {
-        setChatHistory(data);
-      })
-      .catch((error) => {
-        console.error("Error loading chat history:", error);
-      });
+    // STOMP client setup
+    const socket = new SockJS("http://localhost:8080/ws"); // WebSocket 서버 엔드포인트
+    const stompClientInstance = Stomp.over(socket);
+
+    stompClientInstance.connect({}, () => {
+      setStompClient(stompClientInstance);
+    });
+
+    return () => {
+      if (stompClient) {
+        stompClient.disconnect();
+      }
+    };
   }, []);
 
   useEffect(() => {
-    if (selectedChat) {
-      fetch(`http://localhost:11434/api/chat-history/${selectedChat}`)
+    if (selectedChat && stompClient) {
+      // Subscribe to the chat room
+      stompClient.subscribe(`/sub/chats/${selectedChat}`, (message) => {
+        const botMessage = JSON.parse(message.body).content;
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { isUser: false, text: botMessage },
+        ]);
+      });
+
+      // Fetch chat history when a chat room is selected
+      fetch(`http://localhost:8080/api/v1/chatroom/${selectedChat}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+        },
+      })
         .then((response) => response.json())
         .then((data) => {
-          setMessages(data.messages);
+          const fetchedMessages = data.payload.chatRoomMessageResponses.map(
+            (msg) => ({
+              isUser: msg.senderType === "USER",
+              text: msg.content,
+            })
+          );
+          setMessages(fetchedMessages);
         })
         .catch((error) => {
           console.error("Error loading chat messages:", error);
@@ -161,84 +188,43 @@ const ChatApp = () => {
     } else {
       setMessages([]);
     }
-  }, [selectedChat]);
+  }, [selectedChat, stompClient]);
 
-  const handleSend = async () => {
+  const handleSend = () => {
     if (input.trim()) {
       const newMessages = [...messages, { isUser: true, text: input }];
       setMessages(newMessages);
+      stompClient.send(
+        "/pub/chat",
+        {},
+        JSON.stringify({
+          roomId: selectedChat,
+          message: input,
+        })
+      );
       setInput("");
-
-      try {
-        const response = await fetch("http://localhost:11434/api/chat", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            model: "phi3",
-            stream: false,
-            messages: [
-              {
-                role: "user",
-                content: input,
-              },
-            ],
-          }),
-        });
-        const data = await response.json();
-        const botMessage = data.messages[0].content;
-
-        const updatedMessages = [
-          ...newMessages,
-          { isUser: false, text: botMessage },
-        ];
-        setMessages(updatedMessages);
-
-        // Save chat history
-        setChatHistory((prevChatHistory) => ({
-          ...prevChatHistory,
-          [selectedChat]: updatedMessages,
-        }));
-
-        await fetch(`http://localhost:11434/api/chat-history/${selectedChat}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messages: updatedMessages,
-          }),
-        });
-      } catch (error) {
-        console.error("Error sending message to chatbot:", error);
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { isUser: false, text: "챗봇 응답 오류." },
-        ]);
-      }
     }
   };
 
   const handleNewChat = async () => {
     try {
-      const response = await fetch("http://localhost:11434/api/chat-history", {
+      const response = await fetch("http://localhost:8080/api/v1/chatroom", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("jwt")}`,
         },
-        body: JSON.stringify({
-          title: `New Chat`,
-        }),
       });
       const data = await response.json();
-      const newChatId = data.id;
+      const newChatId = data.payload;
 
       setChatHistory((prevChatHistory) => ({
         ...prevChatHistory,
         [newChatId]: [],
       }));
       setSelectedChat(newChatId);
+
+      // 새로운 채팅 페이지로 이동
+      window.location.href = `/chat/${newChatId}`;
     } catch (error) {
       console.error("Error creating new chat:", error);
     }

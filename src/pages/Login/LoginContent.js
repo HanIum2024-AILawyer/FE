@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import axios from "axios";
 
 const WhiteBox = styled.div`
   position: absolute;
@@ -86,22 +87,45 @@ const LoginPageContent = () => {
   const navigate = useNavigate();
 
   const handleOAuthLogin = (provider) => {
-    if (provider === "kakao" || provider === "google") {
-      // 카카오 또는 구글 로그인 처리 서버로 리디렉션
+    if (provider === "kakao" || provider === "google" || provider === "naver") {
       window.location.href = `http://54.180.142.197:8080/oauth2/authorization/${provider}`;
     } else {
-      // 기타 소셜 로그인 처리
-      window.location.href = `http://54.180.142.197:8080/oauth2/authorization/${provider}`;
+      alert("지원되지 않는 로그인 공급자입니다.");
     }
   };
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
     const token = queryParams.get("token");
+
     if (token) {
       localStorage.setItem("jwt", token);
-      // 추가적으로 안전 페이지로 리디렉트하거나 필요한 작업을 수행
-      navigate("/secure-page"); // 예시: 안전 페이지로 리디렉트
+      navigate("/secure-page");
+    } else {
+      // 만약 토큰이 만료되어 있으면 새 토큰을 발급받는다.
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (refreshToken) {
+        axios
+          .get("http://localhost:8080/reissue/access-token", {
+            headers: {
+              "Authorization-refresh": `Bearer ${refreshToken}`,
+            },
+          })
+          .then((response) => {
+            if (response.data.is_success) {
+              localStorage.setItem("jwt", response.data.payload.access_token);
+              navigate("/secure-page");
+            } else {
+              console.error("토큰 재발급 실패", response.data.message);
+              // 실패 시 로그인 페이지로 다시 리디렉션하거나 적절한 처리를 한다.
+              navigate("/login");
+            }
+          })
+          .catch((error) => {
+            console.error("토큰 재발급 요청 중 오류 발생", error);
+            navigate("/login");
+          });
+      }
     }
   }, [navigate]);
 

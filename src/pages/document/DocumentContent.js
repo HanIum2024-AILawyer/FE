@@ -3,8 +3,7 @@ import styled from "styled-components";
 import axios from "axios";
 import { MdEdit } from "react-icons/md";
 
-// 서버 주소 설정
-const SERVER_URL = "http://example.com/api/documents"; // 실제 서버 주소로 대체하세요.
+const SERVER_URL = "http://localhost:8080/api/v1/lawsuit"; // 실제 서버 주소로 대체하세요.
 
 const Container = styled.div`
   padding: 0px 150px;
@@ -12,8 +11,8 @@ const Container = styled.div`
 
 const List = styled.div`
   display: flex;
-  justify-content: space-between; /* 각 항목을 양 끝으로 배치 */
-  position: relative;
+  align-items: center;
+  justify-content: flex-start; /* 왼쪽 정렬 */
   padding: 10px;
   border-bottom: 1px solid;
   font-size: 23px;
@@ -21,13 +20,14 @@ const List = styled.div`
 `;
 
 const KeySpan = styled.span`
-  padding: 10px 0; /* 위아래 패딩 추가 */
+  flex: 3;
   font-size: 23px;
   color: white;
+  text-align: left;
 `;
 
 const KeyInput = styled.input`
-  padding: 10px 0; /* 위아래 패딩 추가 */
+  flex: 3;
   font-size: 23px;
   border: none;
   background: none;
@@ -36,29 +36,6 @@ const KeyInput = styled.input`
     outline: none;
     border-bottom: 1px solid #000;
   }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  align-items: center;
-`;
-
-const Button = styled.button`
-  padding: 8px;
-  background-color: #7fb1bf;
-  color: white;
-`;
-
-const ButtonSeparator = styled.span`
-  margin: 0 8px;
-  color: white;
-`;
-
-const Time = styled.div`
-  position: relative;
-  padding: 8px;
-  left: 200px;
-  color: white;
 `;
 
 const EditButton = styled.button`
@@ -78,47 +55,92 @@ const SaveButton = styled.button`
   margin-left: 10px;
 `;
 
+const Time = styled.div`
+  flex: 2;
+  color: white;
+  text-align: right;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  align-items: center;
+  flex: 2;
+  margin-left: auto; /* 오른쪽으로 정렬 */
+`;
+
+const Button = styled.button`
+  padding: 8px;
+  background-color: #7fb1bf;
+  color: white;
+`;
+
+const ButtonSeparator = styled.span`
+  margin: 0 8px;
+  color: white;
+`;
+
 const DocumentContent = () => {
   const [documents, setDocuments] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [newTitle, setNewTitle] = useState("");
 
   useEffect(() => {
-    fetchDocuments();
+    fetchDocuments(); // 페이지 로드 시 문서 목록을 가져옵니다.
   }, []);
 
   const fetchDocuments = async () => {
     try {
-      const response = await axios.get(SERVER_URL);
-      setDocuments(response.data);
+      const response = await axios.get(SERVER_URL, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("jwt")}`, // JWT 토큰을 헤더에 추가
+        },
+      });
+      setDocuments(response.data.payload); // 서버에서 받은 문서 목록을 설정
     } catch (error) {
       console.error("Failed to fetch documents", error);
     }
   };
 
-  const handleDownload = (id) => {
-    // 다운로드 기능 구현
-    console.log(`Downloading document with id: ${id}`);
-    // 예시 코드. 실제 구현 필요
-    axios({
-      url: `${SERVER_URL}/${id}/download`,
-      method: "GET",
-      responseType: "blob", // 중요한 부분입니다. 응답 데이터를 Blob으로 설정
-    }).then((response) => {
+  const handleDownload = async (id, storedFileName) => {
+    try {
+      const response = await axios({
+        url: `${SERVER_URL}/${id}/download`,
+        method: "GET",
+        responseType: "blob", // 중요한 부분입니다. 응답 데이터를 Blob으로 설정
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("jwt")}`, // JWT 토큰을 헤더에 추가
+        },
+      });
+
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", `document_${id}.pdf`); // 파일 이름 설정
+      link.setAttribute("download", storedFileName);
       document.body.appendChild(link);
       link.click();
-    });
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Failed to download document", error);
+    }
   };
 
   const handleDelete = async (id) => {
     if (window.confirm("정말 삭제하시겠습니까?")) {
       try {
-        await axios.delete(`${SERVER_URL}/${id}`);
-        fetchDocuments(); // 문서 목록 갱신
+        const response = await axios.delete(SERVER_URL, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("jwt")}`, // JWT 토큰을 헤더에 추가
+          },
+          data: {
+            lawSuitIdList: [id], // 삭제할 소송장의 ID를 배열로 전달
+          },
+        });
+
+        if (response.data.is_success) {
+          fetchDocuments(); // 문서 목록 갱신
+        } else {
+          console.error("Failed to delete document", response.data.message);
+        }
       } catch (error) {
         console.error("Failed to delete document", error);
       }
@@ -136,10 +158,25 @@ const DocumentContent = () => {
 
   const handleSaveClick = async (id) => {
     try {
-      await axios.put(`${SERVER_URL}/${id}`, { title: newTitle });
-      setEditingId(null);
-      setNewTitle("");
-      fetchDocuments(); // 문서 목록 갱신
+      const response = await axios.patch(
+        `${SERVER_URL}`,
+        {
+          lawSuitId: id,
+          updateOriginalFileName: newTitle,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("jwt")}`, // JWT 토큰을 헤더에 추가
+          },
+        }
+      );
+      if (response.data.is_success) {
+        setEditingId(null);
+        setNewTitle("");
+        fetchDocuments(); // 문서 목록 갱신
+      } else {
+        console.error("Failed to update document title", response.data.message);
+      }
     } catch (error) {
       console.error("Failed to update document title", error);
     }
@@ -164,17 +201,23 @@ const DocumentContent = () => {
               </>
             ) : (
               <>
-                <KeySpan>{item.title}</KeySpan>
+                <KeySpan>{item.originalFileName}</KeySpan>
                 <EditButton
-                  onClick={() => handleEditClick(item.id, item.title)}
+                  onClick={() =>
+                    handleEditClick(item.id, item.originalFileName)
+                  }
                 >
                   <MdEdit />
                 </EditButton>
               </>
             )}
-            <Time>{item.date}</Time> {/* item의 date 속성을 표시 */}
+            <Time>{item.createAt}</Time> {/* item의 createAt 속성을 표시 */}
             <ButtonGroup>
-              <Button onClick={() => handleDownload(item.id)}>다운로드</Button>
+              <Button
+                onClick={() => handleDownload(item.id, item.storedFileName)}
+              >
+                다운로드
+              </Button>
               <ButtonSeparator>|</ButtonSeparator>
               <Button onClick={() => handleDelete(item.id)}>삭제하기</Button>
             </ButtonGroup>

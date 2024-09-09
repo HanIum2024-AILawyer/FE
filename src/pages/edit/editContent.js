@@ -86,54 +86,53 @@ const EditContent = () => {
     if (e.target.files.length > 0) {
       const file = e.target.files[0];
       const fileName = file.name;
+      const fileExtension = fileName.split(".").pop().toLowerCase();
+
+      // 파일 형식 확인
+      if (!["doc", "docx"].includes(fileExtension)) {
+        setMessages((prevMessages) => [
+          ...prevMessages,
+          { isUser: true, text: fileName },
+          {
+            isUser: false,
+            text: "잘못된 파일 형식입니다. Word 파일(.doc, .docx)만 업로드 가능합니다.",
+          },
+        ]);
+        return;
+      }
 
       const newMessages = [
         ...messages,
         { isUser: true, text: fileName },
-        { isUser: false, text: "첨삭중입니다..." },
+        { isUser: false, text: "소송장을 업로드 중입니다..." },
       ];
 
-      
       setMessages(newMessages);
       setUploading(true);
 
-      const formData = new FormData();
-      formData.append("file", file);
-
-      try {
-        const response = await fetch("http://localhost:11434/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        const data = await response.json();
-        const processedFileUrl = data.fileUrl; // Assume the response contains a URL to the processed file
+      // 서버에 연결된 것처럼 가정하고, 직접 응답을 시뮬레이션
+      setTimeout(() => {
+        const processedFileName = `processed_${fileName}`; // 서버에서 처리된 파일 이름
+        const fileUrl = `http://localhost:8080/download/${processedFileName}`; // 다운로드 URL (가정)
 
         const updatedMessages = [
           ...newMessages.slice(0, -1),
           {
             isUser: false,
-            text: `첨삭이 완료되었습니다. 꼭 파일 내용을 확인하시기 바랍니다. (${fileName})`,
+            text: "첨삭이 완료되었습니다. 다운로드 하여 내용을 꼭 확인하세요!",
           },
           {
             isUser: false,
             text: (
-              <a href={processedFileUrl} download>
-                다운로드
+              <a href={fileUrl} download>
+                첨삭된 {processedFileName}
               </a>
             ),
           },
         ];
         setMessages(updatedMessages);
-      } catch (error) {
-        console.error("Error uploading file:", error);
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { isUser: false, text: "파일 업로드 오류." },
-        ]);
-      } finally {
         setUploading(false);
-      }
+      }, 2000); // 2초 후에 응답 시뮬레이션
     }
   };
 
