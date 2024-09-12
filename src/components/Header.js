@@ -1,3 +1,4 @@
+// Header.js
 import React, { useState, useRef, useEffect } from "react";
 import styled from "styled-components";
 import { Link, useNavigate } from "react-router-dom";
@@ -5,6 +6,7 @@ import { FaBars } from "react-icons/fa";
 import { IoMdPerson } from "react-icons/io";
 import axios from "axios";
 
+// Styled components
 const TopBar = styled.div`
   display: flex;
   justify-content: flex-start;
@@ -178,6 +180,7 @@ const DropMenuList = styled.div`
   }
 `;
 
+// Header component
 const Header = () => {
   const navigate = useNavigate();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -187,9 +190,13 @@ const Header = () => {
   const dropMenuRef = useRef(null);
   const headerContainerRef = useRef(null);
 
+  const TokenRemover = () => {
+    localStorage.removeItem("accessToken");
+  };
+
   useEffect(() => {
     // 로그인 상태 확인 (예시로 localStorage를 사용)
-    const token = localStorage.getItem("authToken");
+    const token = localStorage.getItem("accessToken");
     if (token) {
       setIsLoggedIn(true);
     }
@@ -237,18 +244,15 @@ const Header = () => {
   };
 
   const handleLogout = async () => {
-    const accessToken = localStorage.getItem("kakaoAccessToken");
+    const accessToken = localStorage.getItem("authToken");
     try {
-      await axios.get("http://54.180.142.197:8080/logout", {
+      await axios.get("http://sslaw.shop/logout", {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
       // 로그아웃 성공 시 로컬 스토리지에서 토큰 제거
-      localStorage.removeItem("kakaoAccessToken");
-      localStorage.removeItem("kakaoRefreshToken");
-      localStorage.removeItem("kakaoUserId");
-      localStorage.removeItem("kakaoUserEmail");
+      localStorage.removeItem("authToken");
 
       // 로그아웃 후 로그인 페이지로 리디렉트
       setIsLoggedIn(false);
@@ -339,14 +343,16 @@ const Header = () => {
             <DropMenuList>
               <Link to="/edit">AI에게 첨삭받기</Link>
             </DropMenuList>
-            <DropMenuList></DropMenuList>
             <DropMenuList>
               <Link to="/search">법률정보 검색하기</Link>
             </DropMenuList>
             <DropMenuList>
               <Link to="/make">AI로 소송장 만들기</Link>
             </DropMenuList>
-            <DropMenuList></DropMenuList>
+            <DropMenuList>
+              <Link to="/make">AI로 소송장 만들기</Link>
+            </DropMenuList>
+            <DropMenuList onClick={TokenRemover}>accessToken 삭제</DropMenuList>
             <DropMenuList></DropMenuList>
           </DropMenuContainer>
         </DropMenuStyle>

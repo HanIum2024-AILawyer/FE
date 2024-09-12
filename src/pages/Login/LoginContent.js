@@ -1,7 +1,9 @@
+// LoginPageContent.js
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import axios from "axios";
+import { useLocation } from "react-router-dom";
 
 const WhiteBox = styled.div`
   position: absolute;
@@ -88,7 +90,7 @@ const LoginPageContent = () => {
 
   const handleOAuthLogin = (provider) => {
     if (provider === "kakao" || provider === "google" || provider === "naver") {
-      window.location.href = `http://54.180.142.197:8080/oauth2/authorization/${provider}`;
+      window.location.href = `http://sslaw.shop/oauth2/authorization/${provider}`;
     } else {
       alert("지원되지 않는 로그인 공급자입니다.");
     }
@@ -96,28 +98,42 @@ const LoginPageContent = () => {
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
-    const token = queryParams.get("token");
+    const accessToken = queryParams.get("accessToken");
+    const refreshToken = queryParams.get("refreshToken");
 
-    if (token) {
-      localStorage.setItem("jwt", token);
+    if (accessToken && refreshToken) {
+      // 로그인 성공 시 토큰을 localStorage에 저장
+      localStorage.setItem("authToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+
+      // 토큰 발급 성공 시 콘솔과 alert에 띄우기
+      console.log("Access Token:", accessToken);
+      console.log("Refresh Token:", refreshToken);
+      alert(`토큰 발급 성공`);
+
       navigate("/secure-page");
     } else {
-      // 만약 토큰이 만료되어 있으면 새 토큰을 발급받는다.
-      const refreshToken = localStorage.getItem("refreshToken");
-      if (refreshToken) {
+      // 토큰이 없으면, 토큰 재발급 시도
+      const storedRefreshToken = localStorage.getItem("refreshToken");
+      if (storedRefreshToken) {
         axios
-          .get("http://localhost:8080/reissue/access-token", {
+          .get("http://sslaw.shop/reissue/access-token", {
             headers: {
-              "Authorization-refresh": `Bearer ${refreshToken}`,
+              "Authorization-refresh": `Bearer ${storedRefreshToken}`,
             },
           })
           .then((response) => {
             if (response.data.is_success) {
-              localStorage.setItem("jwt", response.data.payload.access_token);
-              navigate("/secure-page");
+              const newAccessToken = response.data.payload.access_token;
+              localStorage.setItem("authToken", newAccessToken);
+
+              // 새로 발급받은 Access Token 출력 및 알림
+              console.log("새로운 Access Token:", newAccessToken);
+              alert(`새로운 Access Token 발급 성공: ${newAccessToken}`);
+
+              navigate("/");
             } else {
               console.error("토큰 재발급 실패", response.data.message);
-              // 실패 시 로그인 페이지로 다시 리디렉션하거나 적절한 처리를 한다.
               navigate("/login");
             }
           })

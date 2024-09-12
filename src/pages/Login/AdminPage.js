@@ -1,112 +1,184 @@
-import React, { useState } from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import axios from "axios";
+import { useLocation } from "react-router-dom";
 
-const MainContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-`;
-
-const FormContainer = styled.div`
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  width: 50vh;
-  height: 40vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-`;
-
-const Title = styled.h1`
-  font-size: 24px;
-  color: black;
-  margin: 0;
-  transform: translateY(-100%);
-`;
-
-const Subtitle = styled.p`
-  font-size: 16px;
-  margin: 10px 0 20px 0;
-  color: red;
-  transform: translateY(-100%);
-`;
-
-const Input = styled.input`
-  width: 60%;
+const WhiteBox = styled.div`
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 35%;
+  height: 50%;
+  background-color: #fff;
+  color: #000;
   padding: 10px;
-  border: 3px solid gray;
-  border-radius: 4px;
-  font-size: 16px;
-  transform: translateY(20%);
+  border-radius: 5px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 `;
 
-const Button = styled.button`
-  margin-top: 20px;
-  padding: 10px 20px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
+const Container = styled.div`
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  transform: translateY(80%);
+`;
+
+const LoginButton = styled.div`
+  width: 70%;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  border-radius: 5px;
+  font-weight: bold;
+  margin-bottom: 0px;
   cursor: pointer;
 
-  &:hover {
-    background-color: #0056b3;
+  &.kakao {
+    background-color: #fee500;
+    color: black;
+  }
+
+  &.naver {
+    background-color: #1ec800;
+    color: white;
+  }
+
+  &.google {
+    background-color: white;
+    border: 0.5px solid black;
+    color: black;
+
+    span {
+      margin-left: 85px;
+    }
+  }
+
+  img {
+    height: 40px;
+    width: auto;
+    transform: translateX(20%);
+  }
+
+  span {
+    margin-left: 80px;
   }
 `;
 
-const AdminPage = () => {
-  const [adminCode, setAdminCode] = useState("");
+const AdminLoginText = styled.div`
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  width: 100%;
+  height: auto;
+  position: absolute;
+  left: 50%;
+  top: 76%;
+  transform: translate(-50%, 0);
+  font-size: 18px;
+  cursor: pointer;
+  color: white;
+`;
+
+const LoginPageContent = () => {
   const navigate = useNavigate();
 
-  const handleInputChange = (e) => {
-    setAdminCode(e.target.value);
+  const handleOAuthLogin = (provider) => {
+    if (provider === "kakao" || provider === "google" || provider === "naver") {
+      window.location.href = `http://sslaw.shop/oauth2/authorization/${provider}`;
+    } else {
+      alert("지원되지 않는 로그인 공급자입니다.");
+    }
   };
 
-  const handleLogin = async () => {
-    const testCode = "123"; // 테스트용 코드
-    if (adminCode === testCode) {
-      navigate("/adminmenu");
-      return;
-    }
+  useEffect(() => {
+    const queryParams = new URLSearchParams(window.location.search);
+    const accessToken = queryParams.get("accessToken");
+    const refreshToken = queryParams.get("refreshToken");
 
-    try {
-      const response = await axios.post("http://example.com/api/admin-login", {
-        code: adminCode,
-      });
-      if (response.data.success) {
-        navigate("/adminmenu");
-      } else {
-        alert("너 누구냐? NAGA");
+    if (accessToken && refreshToken) {
+      // 로그인 성공 시 토큰을 localStorage에 저장
+      localStorage.setItem("authToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+
+      // 토큰 발급 성공 시 콘솔과 alert에 띄우기
+      console.log("Access Token:", accessToken);
+      console.log("Refresh Token:", refreshToken);
+      alert(`토큰 발급 성공`);
+
+      navigate("/secure-page");
+    } else {
+      // 토큰이 없으면, 토큰 재발급 시도
+      const storedRefreshToken = localStorage.getItem("refreshToken");
+      if (storedRefreshToken) {
+        axios
+          .get("http://sslaw.shop/reissue/access-token", {
+            headers: {
+              "Authorization-refresh": `Bearer ${storedRefreshToken}`,
+            },
+          })
+          .then((response) => {
+            if (response.data.is_success) {
+              const newAccessToken = response.data.payload.access_token;
+              localStorage.setItem("authToken", newAccessToken);
+
+              // 새로 발급받은 Access Token 출력 및 알림
+              console.log("새로운 Access Token:", newAccessToken);
+              alert(`새로운 Access Token 발급 성공: ${newAccessToken}`);
+
+              navigate("/");
+            } else {
+              console.error("토큰 재발급 실패", response.data.message);
+              navigate("/login");
+            }
+          })
+          .catch((error) => {
+            console.error("토큰 재발급 요청 중 오류 발생", error);
+            navigate("/login");
+          });
       }
-    } catch (error) {
-      navigate("/adminmenu");
-      console.error("서버와의 통신에 실패했습니다.", error);
-      alert("서버와의 통신에 실패했습니다.");
     }
-  };
+  }, [navigate]);
 
   return (
-    <MainContainer>
-      <FormContainer>
-        <Title>관리자 코드를 입력하세요</Title>
-        <Subtitle>관리자 인원 이외의 접근을 금지합니다</Subtitle>
-        <Input
-          type="password"
-          placeholder="관리자 코드 입력"
-          value={adminCode}
-          onChange={handleInputChange}
-        />
-        <Button onClick={handleLogin}>로그인</Button>
-      </FormContainer>
-    </MainContainer>
+    <>
+      <WhiteBox>
+        <h1 style={{ position: "absolute", left: "50px" }}>
+          로그인 및 회원가입
+        </h1>
+        <h3 style={{ position: "absolute", left: "50px", top: "70px" }}>
+          소셜 로그인으로 이용하실 수 있습니다
+        </h3>
+        <Container>
+          {["kakao", "naver", "google"].map((provider) => (
+            <LoginButton
+              key={provider}
+              className={provider}
+              onClick={() => handleOAuthLogin(provider)}
+            >
+              <img
+                src={`/assets/loginImage/${
+                  provider.charAt(0).toUpperCase() + provider.slice(1)
+                }_icon.png`}
+                alt={provider}
+              />
+              <span>
+                {provider.charAt(0).toUpperCase() + provider.slice(1)} 계정으로
+                가입 / 로그인
+              </span>
+            </LoginButton>
+          ))}
+        </Container>
+      </WhiteBox>
+      <AdminLoginText onClick={() => navigate("/admin")}>
+        관리자로 로그인
+      </AdminLoginText>
+    </>
   );
 };
 
-export default AdminPage;
+export default LoginPageContent;
