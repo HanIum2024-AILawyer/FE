@@ -22,4 +22,4 @@ const AuthSuccess = () => {
   return null;
 };
 
-export default AuthSucce;
+export default AuthSuccess;

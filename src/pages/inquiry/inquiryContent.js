@@ -82,11 +82,12 @@ const InquiryContent = () => {
   const handleSubmit = async () => {
     if (window.confirm("제출하시겠습니까? (취소할 수 없습니다)")) {
       try {
-        const response = await fetch("http://localhost:8080/api/v1/inquery", {
+        const response = await fetch("https://sslaw.shop/api/v1/inquery", {
           method: "POST",
+          credentials: "include", // 쿠키를 자동으로 포함시킵니다.
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`, // 로컬 스토리지에서 토큰 가져오기
+            // 로컬 스토리지에서 토큰을 가져오는 부분은 삭제합니다.
           },
           body: JSON.stringify(inquiry),
         });

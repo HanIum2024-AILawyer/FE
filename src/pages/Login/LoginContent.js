@@ -2,8 +2,6 @@
 import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
-import axios from "axios";
-import { useLocation } from "react-router-dom";
 
 const WhiteBox = styled.div`
   position: absolute;
@@ -90,60 +88,25 @@ const LoginPageContent = () => {
 
   const handleOAuthLogin = (provider) => {
     if (provider === "kakao" || provider === "google" || provider === "naver") {
-      window.location.href = `http://sslaw.shop/oauth2/authorization/${provider}`;
+      window.location.href = `https://sslaw.shop/oauth2/authorization/${provider}`;
     } else {
       alert("지원되지 않는 로그인 공급자입니다.");
     }
   };
 
   useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const accessToken = queryParams.get("accessToken");
-    const refreshToken = queryParams.get("refreshToken");
-
-    if (accessToken && refreshToken) {
-      // 로그인 성공 시 토큰을 localStorage에 저장
-      localStorage.setItem("authToken", accessToken);
-      localStorage.setItem("refreshToken", refreshToken);
-
-      // 토큰 발급 성공 시 콘솔과 alert에 띄우기
-      console.log("Access Token:", accessToken);
-      console.log("Refresh Token:", refreshToken);
-      alert(`토큰 발급 성공`);
-
-      navigate("/secure-page");
-    } else {
-      // 토큰이 없으면, 토큰 재발급 시도
-      const storedRefreshToken = localStorage.getItem("refreshToken");
-      if (storedRefreshToken) {
-        axios
-          .get("http://sslaw.shop/reissue/access-token", {
-            headers: {
-              "Authorization-refresh": `Bearer ${storedRefreshToken}`,
-            },
-          })
-          .then((response) => {
-            if (response.data.is_success) {
-              const newAccessToken = response.data.payload.access_token;
-              localStorage.setItem("authToken", newAccessToken);
-
-              // 새로 발급받은 Access Token 출력 및 알림
-              console.log("새로운 Access Token:", newAccessToken);
-              alert(`새로운 Access Token 발급 성공: ${newAccessToken}`);
-
-              navigate("/");
-            } else {
-              console.error("토큰 재발급 실패", response.data.message);
-              navigate("/login");
-            }
-          })
-          .catch((error) => {
-            console.error("토큰 재발급 요청 중 오류 발생", error);
-            navigate("/login");
-          });
-      }
-    }
-  }, [navigate]);
+    fetch("https://sslaw.shop/login", {
+      method: "GET",
+      credentials: "include",
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        alert(JSON.stringify(data));
+      })
+      .catch((error) => {
+        alert(`Error: ${error.message}`);
+      });
+  }, []);
 
   return (
     <>

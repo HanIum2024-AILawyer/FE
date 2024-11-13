@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-// 서버 주소 설정
-const SERVER_URL = "http://example.com/api/lawyers"; // 실제 서버 주소로 대체하세요.
-const DELETE_URL = "http://localhost:8080/admin/lawyer";
-const MODIFY_URL = "http://localhost:8080/admin/lawyer/modification";
+const SERVER_URL = "https://sslaw.shop/api/v1/lawyers";
+const DELETE_URL = "https://sslaw.shop/api/v1/admin/lawyers";
 
-// 스타일 정의
 const MainContainer = styled.div`
   text-align: center;
   font-family: Arial, sans-serif;
@@ -47,142 +45,6 @@ const LawyerGrid = styled.div`
   padding: 20px;
 `;
 
-const LawyerCardContainer = styled.div`
-  border: 1px solid #ddd;
-  border-radius: 3%;
-  text-align: center;
-  margin: 8px;
-  background-color: #09132d;
-  width: 360px;
-  height: 525px;
-  cursor: pointer;
-  position: relative;
-`;
-
-const LawyerPhoto = styled.img`
-  width: 100%;
-  height: 380px;
-  border-radius: 3%;
-  object-fit: cover;
-  margin-bottom: 8px;
-`;
-
-const LawyerName = styled.h3`
-  font-size: 20px;
-  margin: 3px;
-  color: #fff;
-`;
-
-const LawyerSpecialty = styled.p`
-  color: #fff;
-  font-size: 15px;
-`;
-
-const CardButtons = styled.div`
-  position: absolute;
-  bottom: 10px;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-`;
-
-const LawyerDetailContainer = styled.div`
-  display: flex;
-  padding: 20px;
-  text-align: left;
-  max-width: 1250px;
-  margin: 20px auto;
-  background-color: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-`;
-
-const LawyerDetailPhoto = styled.img`
-  width: 30%;
-  border-radius: 3%;
-  object-fit: cover;
-  margin-right: 20px;
-`;
-
-const LawyerDetailInfo = styled.div`
-  margin-left: 10px;
-  text-align: left;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  width: 70%;
-`;
-
-const ListsContainer = styled.div`
-  display: flex;
-  justify-content: space-between;
-`;
-
-const InfoList = styled.ul`
-  color: #666;
-  width: 45%;
-`;
-
-const CareerList = styled.ul`
-  color: #666;
-  width: 45%;
-`;
-
-const LawyerDetailHeader = styled.h2`
-  color: #333;
-  margin-right: 10px;
-`;
-
-const LawyerDetailSpecialty = styled.h5`
-  color: #666;
-  margin: 0;
-`;
-
-const HeaderSpecialtyContainer = styled.div`
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
-`;
-
-const LawyerDetailText = styled.p`
-  color: #666;
-  margin-bottom: 10px;
-`;
-
-const BackButton = styled.button`
-  width: 120px;
-  height: 30px;
-  color: #fff;
-  background-color: #09132d;
-  border: 2px solid black;
-  border-radius: 10%;
-  margin-top: 5px;
-`;
-
-const AddEditForm = styled.form`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 20px;
-`;
-
-const Input = styled.input`
-  margin: 10px;
-  padding: 10px;
-  width: 300px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-`;
-
-const Textarea = styled.textarea`
-  margin: 10px;
-  padding: 10px;
-  width: 300px;
-  height: 100px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-`;
-
 const Button = styled.button`
   margin: 10px;
   padding: 10px 20px;
@@ -193,34 +55,59 @@ const Button = styled.button`
   cursor: pointer;
 `;
 
-// LawyerCard 컴포넌트 정의
-const LawyerCard = ({ lawyer, onClick, onDelete }) => {
+const LawyerCardContainer = styled.div`
+  background-color: #f4f4f4;
+  border: 1px solid #ccc;
+  margin: 10px;
+  padding: 15px;
+  border-radius: 8px;
+  width: 250px;
+  text-align: center;
+`;
+
+const LawyerPhoto = styled.img`
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  margin-bottom: 15px;
+`;
+
+const LawyerName = styled.h3`
+  margin: 10px 0;
+`;
+
+const LawyerSpecialty = styled.p`
+  font-style: italic;
+  color: #555;
+`;
+
+const CardButtons = styled.div`
+  margin-top: 10px;
+`;
+
+const LawyerCard = ({ lawyer, onDelete, onEdit }) => {
+  const imageBasePath = "http://localhost:8080/images/";
   return (
     <LawyerCardContainer>
-      <LawyerPhoto src={lawyer.imgSrc} alt={`${lawyer.name}`} />
+      <LawyerPhoto
+        src={`${imageBasePath}${lawyer.imageName}`}
+        alt={lawyer.name}
+      />
       <LawyerName>{lawyer.name}</LawyerName>
-      <LawyerSpecialty>{lawyer.specialty}</LawyerSpecialty>
+      <LawyerSpecialty>{lawyer.tagName}</LawyerSpecialty>
       <CardButtons>
-        <Button onClick={() => onClick(lawyer)}>편집</Button>
         <Button onClick={() => onDelete(lawyer.id)}>삭제</Button>
+        <Button onClick={() => onEdit(lawyer.id)}>수정</Button>{" "}
+        {/* Add Edit Button */}
       </CardButtons>
     </LawyerCardContainer>
   );
 };
 
-// EditLawyer 컴포넌트 정의
 const EditLawyer = () => {
   const [lawyers, setLawyers] = useState([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
-  const [selectedLawyer, setSelectedLawyer] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    lawyerName: "",
-    lawyerTag: "",
-    lawyerImage: "",
-    lawyerProfile: "",
-    lawyerExInfo: "",
-  });
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchLawyers();
@@ -228,103 +115,48 @@ const EditLawyer = () => {
 
   const fetchLawyers = async () => {
     try {
-      const response = await axios.get(SERVER_URL);
-      setLawyers(response.data);
+      const response = await fetch(SERVER_URL);
+      if (!response.ok) {
+        throw new Error("Failed to fetch lawyers");
+      }
+      const data = await response.json();
+      console.log("Received data:", data);
+
+      if (data.status === "OK" && data.code === "200") {
+        console.log("목록 조회 성공");
+        setLawyers(data.payload);
+      } else {
+        console.error("Unexpected response structure:", data);
+      }
     } catch (error) {
       console.error("Failed to fetch lawyers", error);
     }
   };
 
-  const handleSpecialtyClick = (specialty) => {
-    setSelectedSpecialty(specialty);
-    setSelectedLawyer(null); // 세부사항 보기 상태 초기화
-  };
-
-  const handleLawyerClick = (lawyer) => {
-    setSelectedLawyer(lawyer);
-    setFormData({
-      lawyerName: lawyer.lawyerName,
-      lawyerTag: lawyer.lawyerTag,
-      lawyerImage: lawyer.lawyerImage,
-      lawyerProfile: lawyer.lawyerProfile.join("\n"),
-      lawyerExInfo: lawyer.lawyerExInfo.join("\n"),
-    });
-    setIsEditing(true);
-  };
-
   const handleDeleteLawyer = async (id) => {
     try {
-      await axios.delete(`${DELETE_URL}/${id}`);
-      setLawyers(lawyers.filter((lawyer) => lawyer.id !== id));
+      console.log("삭제 클릭함");
+      const response = await axios.delete(`${DELETE_URL}/${id}`, {
+        withCredentials: true, // This will send cookies with the request
+      });
+      if (response.data.is_success) {
+        alert("변호사 삭제 성공");
+      }
     } catch (error) {
       console.error("Failed to delete lawyer", error);
     }
   };
 
-  const handleFormChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
-  };
-
-  const handleFormSubmit = async (e) => {
-    e.preventDefault();
-    const updatedLawyer = {
-      lawyerName: formData.lawyerName,
-      lawyerTag: formData.lawyerTag,
-      lawyerImage: formData.lawyerImage,
-      lawyerProfile: formData.lawyerProfile.split("\n"),
-      lawyerExInfo: formData.lawyerExInfo.split("\n"),
-    };
-
-    try {
-      if (isEditing && selectedLawyer) {
-        // 변호사 정보를 수정하는 POST 요청
-        const response = await axios.post(
-          `${MODIFY_URL}/${selectedLawyer.id}`,
-          updatedLawyer
-        );
-        setLawyers(
-          lawyers.map((lawyer) =>
-            lawyer.id === selectedLawyer.id ? response.data : lawyer
-          )
-        );
-      } else {
-        // 새로운 변호사 추가하는 POST 요청
-        const response = await axios.post(SERVER_URL, updatedLawyer);
-        setLawyers([...lawyers, response.data]);
-      }
-
-      setIsEditing(false);
-      setSelectedLawyer(null);
-      setFormData({
-        lawyerName: "",
-        lawyerTag: "",
-        lawyerImage: "",
-        lawyerProfile: "",
-        lawyerExInfo: "",
-      });
-    } catch (error) {
-      console.error("Failed to save lawyer", error);
-    }
-  };
-
   const handleAddNewLawyer = () => {
-    setSelectedLawyer(null);
-    setIsEditing(true);
-    setFormData({
-      lawyerName: "",
-      lawyerTag: "",
-      lawyerImage: "",
-      lawyerProfile: "",
-      lawyerExInfo: "",
-    });
+    navigate("/addLawyer");
+  };
+
+  const handleEditLawyer = (id) => {
+    navigate("/addLawyer", { state: { id } });
   };
 
   const filteredLawyers = selectedSpecialty
-    ? lawyers.filter((lawyer) => lawyer.lawyerTag === selectedSpecialty)
+    ? lawyers.filter((lawyer) => lawyer.tagName === selectedSpecialty)
     : lawyers;
 
   return (
@@ -333,110 +165,28 @@ const EditLawyer = () => {
         <h1>변호사 소개</h1>
         <Nav>
           <NavList>
-            <NavItem onClick={() => handleSpecialtyClick("상속")}>상속</NavItem>
-            <NavItem onClick={() => handleSpecialtyClick("이혼")}>이혼</NavItem>
-            <NavItem onClick={() => handleSpecialtyClick("성범죄")}>
+            <NavItem onClick={() => setSelectedSpecialty("상속")}>상속</NavItem>
+            <NavItem onClick={() => setSelectedSpecialty("이혼")}>이혼</NavItem>
+            <NavItem onClick={() => setSelectedSpecialty("성범죄")}>
               성범죄
             </NavItem>
-            <NavItem onClick={() => handleSpecialtyClick("교통")}>교통</NavItem>
-            <NavItem onClick={() => handleSpecialtyClick("형사")}>형사</NavItem>
-            <NavItem onClick={() => handleSpecialtyClick(null)}>전체</NavItem>
+            <NavItem onClick={() => setSelectedSpecialty("교통")}>교통</NavItem>
+            <NavItem onClick={() => setSelectedSpecialty("형사")}>형사</NavItem>
+            <NavItem onClick={() => setSelectedSpecialty(null)}>전체</NavItem>
           </NavList>
         </Nav>
       </Header>
       <Button onClick={handleAddNewLawyer}>새 변호사 추가</Button>
-      {isEditing ? (
-        <AddEditForm onSubmit={handleFormSubmit}>
-          <Input
-            type="text"
-            name="lawyerName"
-            placeholder="이름"
-            value={formData.lawyerName}
-            onChange={handleFormChange}
-            required
+      <LawyerGrid>
+        {filteredLawyers.map((lawyer) => (
+          <LawyerCard
+            key={lawyer.id}
+            lawyer={lawyer}
+            onDelete={handleDeleteLawyer}
+            onEdit={handleEditLawyer} // Pass the edit handler to the LawyerCard
           />
-          <Input
-            type="text"
-            name="lawyerTag"
-            placeholder="전문 분야"
-            value={formData.lawyerTag}
-            onChange={handleFormChange}
-            required
-          />
-          <Input
-            type="text"
-            name="lawyerImage"
-            placeholder="이미지 URL"
-            value={formData.lawyerImage}
-            onChange={handleFormChange}
-            required
-          />
-          <Textarea
-            name="lawyerProfile"
-            placeholder="약력 (줄 바꿈으로 구분)"
-            value={formData.lawyerProfile}
-            onChange={handleFormChange}
-            required
-          />
-          <Textarea
-            name="lawyerExInfo"
-            placeholder="정보 (줄 바꿈으로 구분)"
-            value={formData.lawyerExInfo}
-            onChange={handleFormChange}
-            required
-          />
-          <Button type="submit">저장</Button>
-        </AddEditForm>
-      ) : selectedLawyer ? (
-        <div>
-          <LawyerDetailContainer>
-            <LawyerDetailPhoto
-              src={selectedLawyer.lawyerImage}
-              alt={selectedLawyer.lawyerName}
-            />
-            <LawyerDetailInfo>
-              <HeaderSpecialtyContainer>
-                <LawyerDetailHeader>
-                  {selectedLawyer.lawyerName}
-                </LawyerDetailHeader>
-                <LawyerDetailSpecialty>
-                  {selectedLawyer.lawyerTag}
-                </LawyerDetailSpecialty>
-              </HeaderSpecialtyContainer>
-              <ListsContainer>
-                <CareerList>
-                  <h2>약력</h2>
-                  {selectedLawyer.lawyerProfile &&
-                    selectedLawyer.lawyerProfile.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                </CareerList>
-                <InfoList>
-                  <h2>정보</h2>
-                  {selectedLawyer.lawyerExInfo &&
-                    selectedLawyer.lawyerExInfo.map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
-                </InfoList>
-              </ListsContainer>
-            </LawyerDetailInfo>
-          </LawyerDetailContainer>
-          <BackButton onClick={() => setSelectedLawyer(null)}>
-            목록으로
-          </BackButton>
-        </div>
-      ) : (
-        <LawyerGrid>
-          {filteredLawyers.map((lawyer, index) => (
-            <LawyerCard
-              key={index}
-              lawyer={lawyer}
-              onClick={handleLawyerClick}
-              onDelete={handleDeleteLawyer}
-            />
-          ))}
-        </LawyerGrid>
-      )}
+        ))}
+      </LawyerGrid>
     </MainContainer>
   );
 };

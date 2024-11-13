@@ -28,6 +28,9 @@ import AdminMenu from "./pages/admin/adminMenu";
 import EditLawyer from "./pages/admin/editLawyer";
 import Answer from "./pages/admin/answer";
 
+import AddLawyer from "./pages/admin/addLawyer";
+import LawyerInfo from "./pages/admin/lawyerInfo";
+
 import Answered from "./pages/inquiry/answered";
 import Make from "./pages/make";
 
@@ -59,7 +62,8 @@ const App = () => {
     location.pathname === "/admin" ||
     location.pathname === "/adminmenu" ||
     location.pathname === "/editlawyer" ||
-    location.pathname === "/answer";
+    location.pathname === "/answer" ||
+    location.pathname === "/addLawyer";
   return (
     <>
       <GlobalStyle />
@@ -86,6 +90,8 @@ const App = () => {
             <Route path="/answer" element={<Answer />} />
             <Route path="/answered" element={<Answered />} />
             <Route path="/make" element={<Make />} />
+            <Route path="/addLawyer" element={<AddLawyer />} />
+            <Route path="/lawyerInfo" element={<LawyerInfo />} />
           </Routes>
         </Content>
         {!isSpecialPage && <Footer />}

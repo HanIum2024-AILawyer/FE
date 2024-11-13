@@ -5,8 +5,11 @@ import { Link, useNavigate } from "react-router-dom";
 import { FaBars } from "react-icons/fa";
 import { IoMdPerson } from "react-icons/io";
 import axios from "axios";
-
+import Cookies from "js-cookie";
 // Styled components
+
+axios.defaults.withCredentials = true; // withCredentials 전역 설정
+
 const TopBar = styled.div`
   display: flex;
   justify-content: flex-start;
@@ -180,43 +183,53 @@ const DropMenuList = styled.div`
   }
 `;
 
-// Header component
 const Header = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(true); // 임시로 true로 변경 /////////////
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
   const menuDropdownRef = useRef(null);
   const dropMenuRef = useRef(null);
   const headerContainerRef = useRef(null);
 
-  const TokenRemover = () => {
-    localStorage.removeItem("accessToken");
+  /*
+  useEffect(() => {
+    const token = Cookies.get("Authorization-access");
+    console.log(token);
+    if (token) {
+      setIsLoggedIn(true); 
+    } else {
+      setIsLoggedIn(false);
+    }
+  }, []);*/
+
+  // userDropdown을 토글하는 함수
+  const toggleUserDropdown = () => {
+    // 사람 아이콘을 클릭했을 때
+    setActiveDropdown((prev) =>
+      prev === "userDropdown" ? null : "userDropdown"
+    ); // Toggle user dropdown
   };
 
-  useEffect(() => {
-    // 로그인 상태 확인 (예시로 localStorage를 사용)
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      setIsLoggedIn(true);
-    }
-  }, []);
-
-  const toggleDropdown = (dropdownType) => {
+  // menuDropdown을 토글하는 함수
+  const toggleMenuDropdown = () => {
+    // 삼선 아이콘을 클릭했을 때
     if (!isLoggedIn) {
-      alert("로그인 하신 다음 이용해주세요");
-      navigate("/login"); // 로그인 페이지로 이동
+      alert("먼저 로그인 해주세요");
+      navigate("/login");
     } else {
       setActiveDropdown((prev) =>
-        prev === dropdownType ? null : dropdownType
+        prev === "menuDropdown" ? null : "menuDropdown"
       );
     }
   };
 
+  // dropMenu를 마우스로 오버했을 때 보여주는 함수
   const handleMouseEnter = () => {
     setActiveDropdown("dropMenu");
   };
 
+  // dropMenu에서 마우스를 벗어났을 때 드롭다운 닫기
   const handleMouseLeave = (event) => {
     if (
       headerContainerRef.current &&
@@ -229,46 +242,31 @@ const Header = () => {
     }
   };
 
-  const handleClickOutside = (event) => {
-    if (
-      dropdownRef.current &&
-      menuDropdownRef.current &&
-      dropMenuRef.current &&
-      event.target instanceof Node &&
-      !dropdownRef.current.contains(event.target) &&
-      !menuDropdownRef.current.contains(event.target) &&
-      !dropMenuRef.current.contains(event.target)
-    ) {
-      setActiveDropdown(null);
+  // 드롭메뉴의 항목을 클릭했을 때 로그인을 체크하는 함수
+  const handleMenuClick = (link) => {
+    if (!isLoggedIn) {
+      alert("로그인해주세요");
+      navigate("/login");
+    } else {
+      navigate(link);
     }
   };
 
   const handleLogout = async () => {
-    const accessToken = localStorage.getItem("authToken");
     try {
-      await axios.get("http://sslaw.shop/logout", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
+      await axios.get("https://sslaw.shop/logout", {
+        withCredentials: true, // Include cookies automatically
       });
-      // 로그아웃 성공 시 로컬 스토리지에서 토큰 제거
-      localStorage.removeItem("authToken");
 
-      // 로그아웃 후 로그인 페이지로 리디렉트
+      Cookies.remove("Authorization-access"); // Remove the cookie on logout
       setIsLoggedIn(false);
+      alert("로그아웃 성공");
       navigate("/login");
     } catch (error) {
       console.error("로그아웃 실패:", error);
-      // 로그아웃 실패 시 추가적인 에러 처리
+      alert("문제가 생겼습니다. 다시 로그인 해주세요.");
     }
   };
-
-  useEffect(() => {
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
 
   return (
     <>
@@ -291,7 +289,7 @@ const Header = () => {
               <Link to="/">홈</Link>
             </li>
             <li>
-              <Link to="/choicechat"> Ai 상담</Link>
+              <Link to="/choicechat">Ai 상담</Link>
             </li>
             <li>
               <Link to="/introLawyer">변호사 소개</Link>
@@ -300,25 +298,13 @@ const Header = () => {
           </ul>
         </Nav>
         <Icons>
-          <FaBars size={20} onClick={() => toggleDropdown("menuDropdown")} />
-          <IoMdPerson
-            size={20}
-            onClick={() => toggleDropdown("userDropdown")}
-          />
-          {activeDropdown === "userDropdown" && (
-            <DropdownBox ref={dropdownRef}>
-              {isLoggedIn ? (
-                <>
-                  <Link to="#" onClick={handleLogout}>
-                    로그아웃
-                  </Link>
-                  <Link to="/withdrawl">회원탈퇴</Link>
-                </>
-              ) : (
-                <Link to="/login">로그인</Link>
-              )}
-            </DropdownBox>
-          )}
+          {/* Menu dropdown toggle */}
+          <FaBars size={20} onClick={toggleMenuDropdown} />
+
+          {/* User dropdown toggle */}
+          <IoMdPerson size={20} onClick={toggleUserDropdown} />
+
+          {/* 로그인 상태와 관계없는 menuDropdown */}
           {activeDropdown === "menuDropdown" && (
             <MenuDropdownBox ref={menuDropdownRef}>
               <Link to="/faq">FAQ</Link>
@@ -326,33 +312,48 @@ const Header = () => {
               <Link to="/useRules">약관 확인</Link>
             </MenuDropdownBox>
           )}
+
+          {/* 로그인 상태에 따라 드롭다운 메뉴 표시 */}
+          {activeDropdown === "userDropdown" && (
+            <DropdownBox ref={dropdownRef}>
+              {isLoggedIn ? (
+                <>
+                  <Link onClick={handleLogout}>로그아웃</Link>
+                  <Link to="/withdrawl">회원탈퇴</Link>
+                  <Link to="/admin">??</Link>
+                </>
+              ) : (
+                <Link to="/login">로그인</Link>
+              )}
+            </DropdownBox>
+          )}
         </Icons>
       </HeaderContainer>
+
+      {/* 추가적인 dropMenu */}
       {activeDropdown === "dropMenu" && (
         <DropMenuStyle ref={dropMenuRef} onMouseLeave={handleMouseLeave}>
           <DropMenuContainer>
-            <DropMenuList>
-              <Link to="/chat">AI에게 질문하기</Link>
+            <DropMenuList onClick={() => handleMenuClick("/chat")}>
+              AI에게 질문하기
             </DropMenuList>
-            <DropMenuList>
-              <Link to="/introlawyer">변호사 목록</Link>
+            <DropMenuList onClick={() => handleMenuClick("/introlawyer")}>
+              변호사 목록
             </DropMenuList>
-            <DropMenuList>
-              <Link to="/document">소송장 관리하기</Link>
+            <DropMenuList onClick={() => handleMenuClick("/document")}>
+              소송장 관리하기
             </DropMenuList>
-            <DropMenuList>
-              <Link to="/edit">AI에게 첨삭받기</Link>
+            <DropMenuList onClick={() => handleMenuClick("/edit")}>
+              AI에게 첨삭받기
             </DropMenuList>
-            <DropMenuList>
-              <Link to="/search">법률정보 검색하기</Link>
+            <DropMenuList></DropMenuList>
+            <DropMenuList onClick={() => handleMenuClick("/search")}>
+              법률정보 검색하기
             </DropMenuList>
-            <DropMenuList>
-              <Link to="/make">AI로 소송장 만들기</Link>
+            <DropMenuList onClick={() => handleMenuClick("/make")}>
+              AI로 소송장 만들기
             </DropMenuList>
-            <DropMenuList>
-              <Link to="/make">AI로 소송장 만들기</Link>
-            </DropMenuList>
-            <DropMenuList onClick={TokenRemover}>accessToken 삭제</DropMenuList>
+            <DropMenuList></DropMenuList>
             <DropMenuList></DropMenuList>
           </DropMenuContainer>
         </DropMenuStyle>
