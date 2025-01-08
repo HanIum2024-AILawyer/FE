@@ -2,6 +2,8 @@ import React, { useState, useRef } from "react";
 import styled from "styled-components";
 import { AiOutlineCloudUpload } from "react-icons/ai";
 
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+
 const Container = styled.div`
   display: flex;
   justify-content: center;
@@ -110,29 +112,62 @@ const EditContent = () => {
       setMessages(newMessages);
       setUploading(true);
 
-      // 서버에 연결된 것처럼 가정하고, 직접 응답을 시뮬레이션
-      setTimeout(() => {
-        const processedFileName = `processed_${fileName}`; // 서버에서 처리된 파일 이름
-        const fileUrl = `http://localhost:8080/download/${processedFileName}`; // 다운로드 URL (가정)
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
 
-        const updatedMessages = [
+        const response = await fetch(`${SERVER_URL}/api/v1/ollama/doc/fix`, {
+          method: "POST",
+          credentials: "include", // 쿠키를 요청에 포함
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error("파일 업로드 실패");
+        }
+
+        const result = await response.json();
+
+        if (result.status === "OK") {
+          const processedFileName = result.payload.storedFileName; // 서버에서 반환된 저장 파일 이름
+          const fileUrl = `${SERVER_URL}/download/${processedFileName}`; // 다운로드 URL 생성
+
+          const updatedMessages = [
+            ...newMessages.slice(0, -1),
+            {
+              isUser: false,
+              text: "첨삭이 완료되었습니다. 다운로드 하여 내용을 꼭 확인하세요!",
+            },
+            {
+              isUser: false,
+              text: (
+                <a href={fileUrl} download>
+                  첨삭된 {processedFileName}
+                </a>
+              ),
+            },
+          ];
+          setMessages(updatedMessages);
+        } else {
+          setMessages([
+            ...newMessages.slice(0, -1),
+            {
+              isUser: false,
+              text: `오류 발생: ${result.message}`,
+            },
+          ]);
+        }
+      } catch (error) {
+        setMessages([
           ...newMessages.slice(0, -1),
           {
             isUser: false,
-            text: "첨삭이 완료되었습니다. 다운로드 하여 내용을 꼭 확인하세요!",
+            text: `파일 업로드에 실패했습니다: ${error.message}`,
           },
-          {
-            isUser: false,
-            text: (
-              <a href={fileUrl} download>
-                첨삭된 {processedFileName}
-              </a>
-            ),
-          },
-        ];
-        setMessages(updatedMessages);
+        ]);
+      } finally {
         setUploading(false);
-      }, 2000); // 2초 후에 응답 시뮬레이션
+      }
     }
   };
 

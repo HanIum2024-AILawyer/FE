@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+
 // 스타일 정의
 const MainContainer = styled.div`
   text-align: center;
@@ -78,7 +80,7 @@ const Answered = () => {
     const fetchQuestions = async () => {
       try {
         const pendingResponse = await fetch(
-          "http://localhost:8080/api/v1/inquery/my/pending",
+          `${SERVER_URL}/api/v1/inquery/my/pending`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("authToken")}`, // 로컬 스토리지에서 토큰 가져오기
@@ -87,7 +89,7 @@ const Answered = () => {
         );
 
         const answeredResponse = await fetch(
-          "http://localhost:8080/api/v1/inquery/my/answered",
+          `${SERVER_URL}/api/v1/inquery/my/answered`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("authToken")}`, // 로컬 스토리지에서 토큰 가져오기
@@ -119,14 +121,11 @@ const Answered = () => {
   //문의 자세히 보기
   const fetchQuestionDetails = async (id) => {
     try {
-      const response = await fetch(
-        `http://localhost:8080/api/v1/inquery/${id}`,
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`, // 로컬 스토리지에서 토큰 가져오기
-          },
-        }
-      );
+      const response = await fetch(`${SERVER_URL}/api/v1/inquery/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`, // 로컬 스토리지에서 토큰 가져오기
+        },
+      });
 
       const result = await response.json();
 

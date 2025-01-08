@@ -3,8 +3,7 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-const SERVER_URL = "https://sslaw.shop/api/v1/lawyers";
-const DELETE_URL = "https://sslaw.shop/api/v1/admin/lawyers";
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
 const MainContainer = styled.div`
   text-align: center;
@@ -86,7 +85,7 @@ const CardButtons = styled.div`
 `;
 
 const LawyerCard = ({ lawyer, onDelete, onEdit }) => {
-  const imageBasePath = "http://localhost:8080/images/";
+  const imageBasePath = `${SERVER_URL}/images/`;
   return (
     <LawyerCardContainer>
       <LawyerPhoto
@@ -115,7 +114,8 @@ const EditLawyer = () => {
 
   const fetchLawyers = async () => {
     try {
-      const response = await fetch(SERVER_URL);
+      console.log("변호사 목록 불러오는 중");
+      const response = await fetch(`${SERVER_URL}/api/v1/lawyers`);
       if (!response.ok) {
         throw new Error("Failed to fetch lawyers");
       }
@@ -136,9 +136,12 @@ const EditLawyer = () => {
   const handleDeleteLawyer = async (id) => {
     try {
       console.log("삭제 클릭함");
-      const response = await axios.delete(`${DELETE_URL}/${id}`, {
-        withCredentials: true, // This will send cookies with the request
-      });
+      const response = await axios.delete(
+        `${SERVER_URL}/api/v1/admin/lawyers/${id}`,
+        {
+          withCredentials: true, // This will send cookies with the request
+        }
+      );
       if (response.data.is_success) {
         alert("변호사 삭제 성공");
       }

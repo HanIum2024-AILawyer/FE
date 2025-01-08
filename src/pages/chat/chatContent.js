@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import SockJS from "sockjs-client";
 import { Stomp } from "@stomp/stompjs";
+import { useNavigate } from "react-router-dom";
+
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
 // Styled Components for Sidebar
 const SidebarContainer = styled.div`
@@ -68,15 +71,17 @@ const WelcomeMessage = styled.div`
   color: #888;
   font-size: 1.2em;
 `;
-
 const MessageList = styled.div`
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* 스크롤을 추가 */
+  max-height: 100%; /* 부모 컨테이너 높이를 초과하지 않도록 설정 */
 `;
 
 const Message = styled.div`
   display: flex;
   justify-content: ${(props) => (props.isUser ? "flex-end" : "flex-start")};
-  margin-bottom: 20px;
 `;
 
 const MessageBubble = styled.div`
@@ -98,8 +103,7 @@ const Bot = styled.span`
 `;
 
 const Text = styled.span`
-  margin-left: 10px;
-  color: black;
+  color: white;
 `;
 
 const ChatInputContainer = styled.div`
@@ -134,14 +138,15 @@ const ChatApp = () => {
   const [selectedChat, setSelectedChat] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [chatHistory, setChatHistory] = useState({});
+  const [chatHistory, setChatHistory] = useState([]); // 초기값을 빈 배열로 설정
   const [stompClient, setStompClient] = useState(null);
+  const [currentSubscription, setCurrentSubscription] = useState(null);
 
-  const chatList = Object.keys(chatHistory); // 대화 리스트
+  const navigate = useNavigate();
 
+  // STOMP 클라이언트 설정
   useEffect(() => {
-    // STOMP client setup
-    const socket = new SockJS("http://localhost:8080/ws"); // WebSocket 서버 엔드포인트
+    const socket = new SockJS(`${SERVER_URL}/ws`);
     const stompClientInstance = Stomp.over(socket);
 
     stompClientInstance.connect({}, () => {
@@ -155,22 +160,31 @@ const ChatApp = () => {
     };
   }, []);
 
+  // 채팅방 구독
   useEffect(() => {
     if (selectedChat && stompClient) {
-      // Subscribe to the chat room
-      stompClient.subscribe(`/sub/chats/${selectedChat}`, (message) => {
-        const botMessage = JSON.parse(message.body).content;
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { isUser: false, text: botMessage },
-        ]);
-      });
+      if (currentSubscription) {
+        currentSubscription.unsubscribe();
+      }
 
-      // Fetch chat history when a chat room is selected
-      fetch(`http://localhost:8080/api/v1/chatroom/${selectedChat}`, {
+      const subscription = stompClient.subscribe(
+        `/sub/chats/${selectedChat}`,
+        (message) => {
+          const botMessage = JSON.parse(message.body).content;
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { isUser: false, text: botMessage },
+          ]);
+        }
+      );
+
+      setCurrentSubscription(subscription);
+
+      fetch(`${SERVER_URL}/api/v1/chatroom/${selectedChat}`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("jwt")}`,
         },
+        credentials: "include",
       })
         .then((response) => response.json())
         .then((data) => {
@@ -188,10 +202,17 @@ const ChatApp = () => {
     } else {
       setMessages([]);
     }
+
+    return () => {
+      if (currentSubscription) {
+        currentSubscription.unsubscribe();
+      }
+    };
   }, [selectedChat, stompClient]);
 
+  // 메시지 전송
   const handleSend = () => {
-    if (input.trim()) {
+    if (input.trim() && stompClient) {
       const newMessages = [...messages, { isUser: true, text: input }];
       setMessages(newMessages);
       stompClient.send(
@@ -208,25 +229,36 @@ const ChatApp = () => {
 
   const handleNewChat = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/v1/chatroom", {
+      const response = await fetch(`${SERVER_URL}/api/v1/chatroom`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${localStorage.getItem("jwt")}`,
+          Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
         },
+        credentials: "include",
       });
+
       const data = await response.json();
       const newChatId = data.payload;
 
-      setChatHistory((prevChatHistory) => ({
-        ...prevChatHistory,
-        [newChatId]: [],
-      }));
+      setChatHistory((prevChatHistory) => [...prevChatHistory, newChatId]);
       setSelectedChat(newChatId);
 
-      // 새로운 채팅 페이지로 이동
-      window.location.href = `/chat/${newChatId}`;
+      if (stompClient) {
+        const subscriptionPath = `/sub/chats/${newChatId}`;
+        stompClient.subscribe(subscriptionPath, (message) => {
+          const botMessage = JSON.parse(message.body).content;
+          setMessages((prevMessages) => [
+            ...prevMessages,
+            { isUser: false, text: botMessage },
+          ]);
+        });
+
+        console.log(`Subscribed to: ${subscriptionPath}`);
+      }
+
+      navigate(`/chat/${newChatId}`);
     } catch (error) {
-      console.error("Error creating new chat:", error);
+      console.error("Error creating or subscribing to new chat:", error);
     }
   };
 
@@ -238,11 +270,12 @@ const ChatApp = () => {
         </NewChatButton>
         <Logo>대화기록</Logo>
         <ChatList>
-          {chatList.map((chat, index) => (
-            <ChatItem key={index} onClick={() => setSelectedChat(chat)}>
-              {chat}
-            </ChatItem>
-          ))}
+          {Array.isArray(chatHistory) &&
+            chatHistory.map((chat, index) => (
+              <ChatItem key={index} onClick={() => setSelectedChat(chat)}>
+                {chat}
+              </ChatItem>
+            ))}
         </ChatList>
       </SidebarContainer>
       <ChatWindowContainer>
@@ -256,7 +289,7 @@ const ChatApp = () => {
               {messages.map((message, index) => (
                 <Message key={index} isUser={message.isUser}>
                   <MessageBubble isUser={message.isUser}>
-                    {message.isUser ? <User>User:</User> : <Bot>ChatGPT:</Bot>}
+                    {message.isUser ? <User /> : <Bot>ChatGPT:</Bot>}
                     <Text>{message.text}</Text>
                   </MessageBubble>
                 </Message>
@@ -270,7 +303,6 @@ const ChatApp = () => {
             placeholder="메시지를 입력하세요..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSend()}
           />
           <Button onClick={handleSend}>전송</Button>
         </ChatInputContainer>

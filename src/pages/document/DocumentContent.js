@@ -3,7 +3,8 @@ import styled from "styled-components";
 import axios from "axios";
 import { MdEdit } from "react-icons/md";
 
-const SERVER_URL = "http://localhost:8080/api/v1/lawsuit"; // 실제 서버 주소로 대체하세요.
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+const Document_URL = `${SERVER_URL}/api/v1/lawsuit`; // 실제 서버 주소로 대체하세요.
 
 const Container = styled.div`
   padding: 0px 150px;
@@ -90,7 +91,7 @@ const DocumentContent = () => {
 
   const fetchDocuments = async () => {
     try {
-      const response = await axios.get(SERVER_URL, {
+      const response = await axios.get(Document_URL, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("jwt")}`, // JWT 토큰을 헤더에 추가
         },
@@ -104,7 +105,7 @@ const DocumentContent = () => {
   const handleDownload = async (id, storedFileName) => {
     try {
       const response = await axios({
-        url: `${SERVER_URL}/${id}/download`,
+        url: `${Document_URL}/${id}/download`,
         method: "GET",
         responseType: "blob", // 중요한 부분입니다. 응답 데이터를 Blob으로 설정
         headers: {
@@ -127,10 +128,8 @@ const DocumentContent = () => {
   const handleDelete = async (id) => {
     if (window.confirm("정말 삭제하시겠습니까?")) {
       try {
-        const response = await axios.delete(SERVER_URL, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("jwt")}`, // JWT 토큰을 헤더에 추가
-          },
+        const response = await axios.delete(Document_URL, {
+          withCredentials: "true",
           data: {
             lawSuitIdList: [id], // 삭제할 소송장의 ID를 배열로 전달
           },
@@ -165,9 +164,7 @@ const DocumentContent = () => {
           updateOriginalFileName: newTitle,
         },
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("jwt")}`, // JWT 토큰을 헤더에 추가
-          },
+          withCredentials: "true",
         }
       );
       if (response.data.is_success) {
@@ -196,7 +193,7 @@ const DocumentContent = () => {
                   onChange={handleTitleChange}
                 />
                 <SaveButton onClick={() => handleSaveClick(item.id)}>
-                  저장
+                  저장하기
                 </SaveButton>
               </>
             ) : (

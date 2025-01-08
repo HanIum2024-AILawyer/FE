@@ -3,6 +3,8 @@ import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+
 const WhiteBox = styled.div`
   position: absolute;
   left: 50%;
@@ -88,14 +90,18 @@ const LoginPageContent = () => {
 
   const handleOAuthLogin = (provider) => {
     if (provider === "kakao" || provider === "google" || provider === "naver") {
-      window.location.href = `https://sslaw.shop/oauth2/authorization/${provider}`;
+      // 현재 시간을 기록
+      localStorage.setItem("token-timestamp", Date.now().toString());
+
+      // OAuth 인증 요청
+      window.location.href = `${SERVER_URL}/oauth2/authorization/${provider}`;
     } else {
       alert("지원되지 않는 로그인 공급자입니다.");
     }
   };
 
   useEffect(() => {
-    fetch("https://sslaw.shop/login", {
+    fetch(`${SERVER_URL}/login`, {
       method: "GET",
       credentials: "include",
     })

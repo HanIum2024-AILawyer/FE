@@ -8,6 +8,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 // Styled components
 
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 axios.defaults.withCredentials = true; // withCredentials 전역 설정
 
 const TopBar = styled.div`
@@ -185,35 +186,52 @@ const DropMenuList = styled.div`
 
 const Header = () => {
   const navigate = useNavigate();
-  const [isLoggedIn, setIsLoggedIn] = useState(true); // 임시로 true로 변경 /////////////
+  const [isLoggedIn, setIsLoggedIn] = useState(false); // 초기값 false
   const [activeDropdown, setActiveDropdown] = useState(null);
   const dropdownRef = useRef(null);
   const menuDropdownRef = useRef(null);
   const dropMenuRef = useRef(null);
   const headerContainerRef = useRef(null);
 
-  /*
-  useEffect(() => {
-    const token = Cookies.get("Authorization-access");
-    console.log(token);
-    if (token) {
-      setIsLoggedIn(true); 
+  // 1시간 유효 시간 체크
+  const checkTokenValidity = () => {
+    const tokenTimestamp = parseInt(
+      localStorage.getItem("token-timestamp"), // 문자열 가져오기
+      10 // 10진수로 변환
+    );
+
+    const currentTime = Date.now(); // 숫자
+
+    if (tokenTimestamp) {
+      const elapsedTime = currentTime - tokenTimestamp; // 숫자끼리 계산
+      if (elapsedTime >= 3600000) {
+        // 1시간 초과
+        Cookies.remove("accessToken");
+        localStorage.removeItem("token-timestamp");
+        setIsLoggedIn(false);
+        alert("로그인 세션이 만료되었습니다. 다시 로그인해주세요.");
+      } else {
+        setIsLoggedIn(true);
+      }
     } else {
       setIsLoggedIn(false);
     }
-  }, []);*/
+  };
+
+  // 컴포넌트가 마운트될 때 유효 시간 체크
+  useEffect(() => {
+    checkTokenValidity();
+  }, []);
 
   // userDropdown을 토글하는 함수
   const toggleUserDropdown = () => {
-    // 사람 아이콘을 클릭했을 때
     setActiveDropdown((prev) =>
       prev === "userDropdown" ? null : "userDropdown"
-    ); // Toggle user dropdown
+    );
   };
 
   // menuDropdown을 토글하는 함수
   const toggleMenuDropdown = () => {
-    // 삼선 아이콘을 클릭했을 때
     if (!isLoggedIn) {
       alert("먼저 로그인 해주세요");
       navigate("/login");
@@ -252,19 +270,22 @@ const Header = () => {
     }
   };
 
+  // 로그아웃 처리 함수
   const handleLogout = async () => {
     try {
-      await axios.get("https://sslaw.shop/logout", {
-        withCredentials: true, // Include cookies automatically
+      await axios.get(`${SERVER_URL}/logout`, {
+        withCredentials: true,
       });
 
-      Cookies.remove("Authorization-access"); // Remove the cookie on logout
+      Cookies.remove("accessToken");
+      localStorage.removeItem("token-timestamp");
       setIsLoggedIn(false);
       alert("로그아웃 성공");
       navigate("/login");
     } catch (error) {
       console.error("로그아웃 실패:", error);
       alert("문제가 생겼습니다. 다시 로그인 해주세요.");
+      setIsLoggedIn(false);
     }
   };
 
@@ -298,13 +319,9 @@ const Header = () => {
           </ul>
         </Nav>
         <Icons>
-          {/* Menu dropdown toggle */}
           <FaBars size={20} onClick={toggleMenuDropdown} />
-
-          {/* User dropdown toggle */}
           <IoMdPerson size={20} onClick={toggleUserDropdown} />
 
-          {/* 로그인 상태와 관계없는 menuDropdown */}
           {activeDropdown === "menuDropdown" && (
             <MenuDropdownBox ref={menuDropdownRef}>
               <Link to="/faq">FAQ</Link>
@@ -313,14 +330,13 @@ const Header = () => {
             </MenuDropdownBox>
           )}
 
-          {/* 로그인 상태에 따라 드롭다운 메뉴 표시 */}
           {activeDropdown === "userDropdown" && (
             <DropdownBox ref={dropdownRef}>
               {isLoggedIn ? (
                 <>
                   <Link onClick={handleLogout}>로그아웃</Link>
                   <Link to="/withdrawl">회원탈퇴</Link>
-                  <Link to="/admin">??</Link>
+                  <Link to="/admin">관리자 페이지</Link>
                 </>
               ) : (
                 <Link to="/login">로그인</Link>
@@ -330,7 +346,6 @@ const Header = () => {
         </Icons>
       </HeaderContainer>
 
-      {/* 추가적인 dropMenu */}
       {activeDropdown === "dropMenu" && (
         <DropMenuStyle ref={dropMenuRef} onMouseLeave={handleMouseLeave}>
           <DropMenuContainer>
@@ -346,15 +361,13 @@ const Header = () => {
             <DropMenuList onClick={() => handleMenuClick("/edit")}>
               AI에게 첨삭받기
             </DropMenuList>
-            <DropMenuList></DropMenuList>
+            <DropMenuList />
             <DropMenuList onClick={() => handleMenuClick("/search")}>
               법률정보 검색하기
             </DropMenuList>
             <DropMenuList onClick={() => handleMenuClick("/make")}>
               AI로 소송장 만들기
             </DropMenuList>
-            <DropMenuList></DropMenuList>
-            <DropMenuList></DropMenuList>
           </DropMenuContainer>
         </DropMenuStyle>
       )}

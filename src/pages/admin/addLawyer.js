@@ -5,7 +5,7 @@ import axios from "axios";
 import { useParams } from "react-router-dom";
 import { useLocation } from "react-router-dom";
 
-const URL = "https://sslaw.shop/api/v1/admin/lawyers";
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
 const PageContainer = styled.div`
   height: 100vh;
@@ -71,7 +71,9 @@ const ImagePreview = styled.img`
 const AddLawyer = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const lawyerId = location.state?.id; // Retrieve id from state if it exists
+
+  // 1. 상태 관리 및 초기화
+  const lawyerId = location.state?.id; // state에서 lawyerId 가져오기
   const [formData, setFormData] = useState({
     lawyerName: "",
     lawyerIntro: "",
@@ -83,9 +85,10 @@ const AddLawyer = () => {
     lawyerFaxNumber: "",
     lawyerEmail: "",
   });
-  const [imagePreview, setImagePreview] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null); // 이미지 미리보기
+  const [isEditing, setIsEditing] = useState(false); // 수정 모드 여부
 
+  // 2. lawyerId가 존재하면 데이터 가져오기
   useEffect(() => {
     if (lawyerId) {
       console.log("lawyerID : " + lawyerId);
@@ -94,6 +97,7 @@ const AddLawyer = () => {
     }
   }, [lawyerId]);
 
+  // 3. 특정 변호사 데이터 가져오기 함수
   const fetchLawyerData = async () => {
     try {
       const response = await axios.get(`${URL}/${lawyerId}`, {
@@ -111,13 +115,13 @@ const AddLawyer = () => {
         lawyerFaxNumber: data.faxNumber,
         lawyerEmail: data.emailAddress,
       });
-      setImagePreview(`${data.imageName}`); // Assuming the server sends the image URL
+      setImagePreview(`${data.imageName}`); // 서버에서 제공한 이미지 URL
     } catch (error) {
       console.error("Failed to fetch lawyer data", error);
     }
   };
 
-  // Handle form field changes
+  // 4. 입력 필드 변경 핸들러
   const handleFormChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -126,21 +130,22 @@ const AddLawyer = () => {
     });
   };
 
-  // Handle image selection and preview
+  // 5. 이미지 선택 및 미리보기 핸들러
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       setImagePreview(URL.createObjectURL(file));
+      setFormData({ ...formData, imageFile: file });
     }
   };
 
-  // Handle form submission
+  // 6. 폼 제출 핸들러
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
     const formDataToSend = new FormData();
 
-    // 텍스트 필드를 JSON으로 변환하여 Blob으로 추가
+    // JSON 데이터를 Blob으로 추가
     const jsonFormData = JSON.stringify({
       name: formData.lawyerName,
       intro: formData.lawyerIntro,
@@ -155,16 +160,15 @@ const AddLawyer = () => {
     const jsonBlob = new Blob([jsonFormData], { type: "application/json" });
     formDataToSend.append("request", jsonBlob);
 
-    // 이미지 파일이 있는 경우에만 추가
+    // 이미지 파일 추가 (있는 경우에만)
     if (formData.imageFile) {
       formDataToSend.append("image", formData.imageFile);
     }
 
-    // 전송할 데이터를 자세히 콘솔에 출력
+    // 전송할 FormData 상세 출력
     console.log("전송할 FormData:");
     formDataToSend.forEach((value, key) => {
       if (value instanceof Blob) {
-        // Blob 객체를 자세히 출력
         console.log(`${key}: Blob`, {
           type: value.type,
           size: value.size,
@@ -180,12 +184,16 @@ const AddLawyer = () => {
       if (isEditing) {
         console.log("isEditing : ON");
         // 기존 변호사 정보 수정
-        const response = await axios.put(`${URL}/${lawyerId}`, formDataToSend, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          withCredentials: true,
-        });
+        const response = await axios.put(
+          `${SERVER_URL}/api/v1/admin/lawyers/${lawyerId}`,
+          formDataToSend,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+            withCredentials: true,
+          }
+        );
         if (response.data.is_success) {
           alert("변호사 정보가 수정되었습니다.");
           navigate(-1);
@@ -193,20 +201,20 @@ const AddLawyer = () => {
       } else {
         console.log("isEditing : OFF");
         // 새로운 변호사 추가
-        await axios.post(URL, formDataToSend, {
+        await axios.post(`${SERVER_URL}/api/v1/admin/lawyers`, formDataToSend, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
           withCredentials: true,
         });
         alert("새 변호사가 추가되었습니다.");
+        navigate(-1);
       }
     } catch (error) {
       console.error("Failed to save lawyer", error);
       alert("저장 실패");
     }
   };
-
   return (
     <PageContainer>
       <AddEditForm onSubmit={handleFormSubmit}>
@@ -295,7 +303,9 @@ const AddLawyer = () => {
           {imagePreview && <ImagePreview src={imagePreview} alt="미리보기" />}
         </FormSection>
 
-        <Button type="submit">{isEditing ? "수정" : "저장"}</Button>
+        <Button type="submit" onChange={handleFormSubmit}>
+          {isEditing ? "수정" : "저장"}
+        </Button>
       </AddEditForm>
     </PageContainer>
   );

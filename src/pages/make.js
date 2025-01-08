@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import styled from "styled-components";
 import axios from "axios"; // Import axios for API calls
 
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+
 // Styled Components
 const Container = styled.div`
   display: flex;
@@ -111,86 +113,115 @@ const DownloadLink = styled.a`
 
 const AiConsultation = () => {
   const [selectedForm, setSelectedForm] = useState(""); // Tracks which form is selected
-  const [inputValue, setInputValue] = useState(""); // Tracks the input value
+  const [defendantCount, setDefendantCount] = useState(""); // Number of defendants
+  const [caseDescription, setCaseDescription] = useState(""); // Description of the case
+  const [claimAmount, setClaimAmount] = useState(""); // Claim amount (for 민사)
+  const [damageScale, setDamageScale] = useState(""); // Damage scale (for 형사)
   const [showNextPage, setShowNextPage] = useState(false); // Tracks if the next page is displayed
   const [showAmountPage, setShowAmountPage] = useState(false); // Tracks if the amount page is displayed
   const [loading, setLoading] = useState(false); // Simulates loading screen
   const [completed, setCompleted] = useState(false); // Tracks if the process is completed
   const [downloadLink, setDownloadLink] = useState(""); // Tracks the file download link
+  const [fileName, setFileName] = useState(""); // Stores the generated file name
 
   // Handle button click to set the selected form
   const handleSelectForm = (form) => {
     setSelectedForm(form);
   };
 
-  // Handle input change
-  const handleInputChange = (e) => {
-    setInputValue(e.target.value);
+  // Handle input change for individual fields
+  const handleInputChange = (setter) => (e) => {
+    setter(e.target.value);
   };
 
   // Handle "다음" button click
   const handleNext = () => {
-    if (inputValue) {
+    if (selectedForm && defendantCount) {
       setShowNextPage(true);
-      setInputValue(""); // Reset the input field
     } else {
-      alert("숫자를 입력해주세요.");
+      alert("모든 필드를 입력해주세요.");
     }
   };
 
   // Handle submit for 피해 내용
   const handleSubmitContent = () => {
-    setShowAmountPage(true);
+    if (caseDescription) {
+      setShowAmountPage(true);
+    } else {
+      alert("내용을 입력해주세요.");
+    }
   };
 
-  // Simulates sending data and showing the loading screen
+  // Handle final submit and generate file
   const handleSubmit = async () => {
     setLoading(true);
 
-    // Prepare data for the API call
     const data = {
-      lawsuitType: selectedForm === "소송장" ? "민사" : "형사",
-      defendantCount: parseInt(inputValue) || 0,
-      caseDescription: "사건에 대한 서술 예시", // Replace with actual input if applicable
-      claimAmount: selectedForm === "소송장" ? parseFloat(inputValue) : null, // Include only for 민사
-      damageScale: selectedForm === "고소장" ? inputValue : null, // Include only for 형사
+      doc_type: selectedForm === "소송장" ? "101" : "201",
+      defendant_count: defendantCount,
+      case_description: caseDescription,
+      claim_amount: selectedForm === "소송장" ? claimAmount : null,
+      damage_scale: selectedForm === "고소장" ? damageScale : null,
     };
 
     try {
-      // API call
       const response = await axios.post(
-        "http://localhost:8080/api/v1/ollama/doc/make",
+        `${SERVER_URL}/api/v1/ollama/doc/make`,
         data,
-        {
-          headers: {
-            Authorization: `Bearer YOUR_BEARER_TOKEN`, // Replace with your actual token
-          },
-        }
+        { responseType: "blob", withCredentials: true }
       );
 
-      // Handle successful response
-      if (response.data.is_success) {
-        setDownloadLink(response.data.payload.storedFileName); // Set the file download link
+      if (response.status === 200) {
+        const blob = new Blob([response.data], { type: "application/pdf" });
+        const blobUrl = URL.createObjectURL(blob);
+        setDownloadLink(blobUrl);
+        setFileName("생성된_문서.pdf");
         setCompleted(true);
       } else {
         alert("파일 생성에 실패했습니다. 다시 시도해주세요.");
       }
     } catch (error) {
-      console.error("API 요청 중 오류가 발생했습니다:", error);
+      console.error("API 요청 중 오류 발생:", error);
       alert("서버 오류가 발생했습니다. 다시 시도해주세요.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Handle file download for a predefined document
+  const handleDownload = async () => {
+    try {
+      const response = await axios.get(
+        `${SERVER_URL}/api/v1/lawsuit/download/37748dbe-8006-471a-88fc-eceb00b7811b.docx`,
+        {
+          responseType: "blob",
+          withCredentials: true,
+        }
+      );
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+      const url = URL.createObjectURL(blob);
+      setDownloadLink(url);
+      setFileName("다운로드된_파일.docx");
+    } catch (error) {
+      console.error("파일 다운로드 중 오류 발생:", error);
+    }
+  };
+
   // Reset the form
   const handleReset = () => {
     setSelectedForm("");
+    setDefendantCount("");
+    setCaseDescription("");
+    setClaimAmount("");
+    setDamageScale("");
     setShowNextPage(false);
     setShowAmountPage(false);
     setCompleted(false);
-    setInputValue("");
     setDownloadLink("");
+    setFileName("");
   };
 
   // Conditional Rendering
@@ -208,9 +239,9 @@ const AiConsultation = () => {
             개인정보 부분은 직접 입력하셔야 하며 내용을 꼭 확인하시기 바랍니다.
           </Message>
           {downloadLink && (
-            <DownloadLink href={downloadLink} download>
-              파일 다운로드 링크
-            </DownloadLink>
+            <Button onClick={handleDownload}>
+              {fileName ? `${fileName} 다운로드` : "DOC 파일 다운로드"}
+            </Button>
           )}
           <ButtonGroup>
             <Button onClick={handleReset}>다시 생성하기</Button>
@@ -223,7 +254,7 @@ const AiConsultation = () => {
         </FinalScreen>
       ) : !selectedForm ? (
         <>
-          <Header>AI 청사상담</Header>
+          <Header>생성형 AI 고소장, 소송장 상담</Header>
           <Message>
             안녕하세요! 저는 스스로의 AI예요! <br />
             작성을 도와드릴게요! 어떤 것을 생성하고 싶으신가요?
@@ -241,8 +272,8 @@ const AiConsultation = () => {
           <label style={{ color: "black" }}>숫자로 입력해주세요</label>
           <Input
             type="number"
-            value={inputValue}
-            onChange={handleInputChange}
+            value={defendantCount}
+            onChange={handleInputChange(setDefendantCount)}
             placeholder="숫자를 입력해주세요"
           />
           <SubmitButton onClick={handleNext}>다음</SubmitButton>
@@ -255,8 +286,8 @@ const AiConsultation = () => {
             상세히 적어주시면 도움이 됩니다.
           </Message>
           <TextArea
-            value={inputValue}
-            onChange={handleInputChange}
+            value={caseDescription}
+            onChange={handleInputChange(setCaseDescription)}
             placeholder="피해 규모를 작성해주세요..."
           />
           <SubmitButton onClick={handleSubmitContent}>다음</SubmitButton>
@@ -271,11 +302,11 @@ const AiConsultation = () => {
           <label style={{ color: "black" }}>숫자만 입력해주세요</label>
           <Input
             type="text"
-            value={inputValue}
-            onChange={handleInputChange}
+            value={claimAmount}
+            onChange={handleInputChange(setClaimAmount)}
             placeholder="만원 단위로 입력해주세요"
           />
-          <SubmitButton onClick={handleSubmit}>다음</SubmitButton>
+          <SubmitButton onClick={handleSubmit}>완료</SubmitButton>
         </Form>
       ) : (
         <Form>
@@ -285,8 +316,8 @@ const AiConsultation = () => {
             피해 내용을 적어주세요.
           </Message>
           <TextArea
-            value={inputValue}
-            onChange={handleInputChange}
+            value={damageScale}
+            onChange={handleInputChange(setDamageScale)}
             placeholder="피해 내용을 상세히 작성해주세요..."
           />
           <SubmitButton onClick={handleSubmit}>완료</SubmitButton>

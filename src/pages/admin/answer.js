@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 
+const SERVER_URL = process.env.SERVER_URL;
+
 // 스타일 정의
 const MainContainer = styled.div`
   text-align: center;
@@ -160,7 +162,7 @@ const Answer = () => {
     // 서버로 전송하는 코드
     try {
       const response = await fetch(
-        `http://localhost:8080/admin/inquery/${selectedQuestion.id}/answer`,
+        `${SERVER_URL}/admin/inquery/${selectedQuestion.id}/answer`,
         {
           method: "POST",
           headers: {

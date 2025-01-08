@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 import axios from "axios";
 
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
+
 // 스타일 정의
 const MainContainer = styled.div`
   text-align: center;
@@ -146,14 +148,13 @@ const BackButton = styled.button`
 const LawyerCard = ({ lawyer, onClick }) => {
   return (
     <LawyerCardContainer onClick={() => onClick(lawyer.layerId)}>
-      <LawyerPhoto src={lawyer.lawyerImageUrl} alt={`${lawyer.lawyerName}`} />
+      <LawyerPhoto src={lawyer.imageNamel} alt={`${lawyer.imageName}`} />
       <LawyerName>{lawyer.lawyerName}</LawyerName>
       <LawyerSpecialty>{lawyer.lawyerfield}</LawyerSpecialty>
     </LawyerCardContainer>
   );
 };
 
-// IntroLawyerContent 컴포넌트 정의
 const IntroLawyerContent = () => {
   const [lawyers, setLawyers] = useState([]);
   const [selectedSpecialty, setSelectedSpecialty] = useState(null);
@@ -165,21 +166,21 @@ const IntroLawyerContent = () => {
 
   const fetchLawyers = async () => {
     try {
-      const response = await axios.get(
-        "http://localhost:8080/api/v1/lawyer/lawyerlist"
-      );
-      setLawyers(response.data);
+      const response = await axios.get(`${SERVER_URL}/api/v1/lawyers`);
+      console.log(response);
+      setLawyers(response.data.payload || []); // payload만 저장
     } catch (error) {
       console.error("Failed to fetch lawyers", error);
+      setLawyers([]); // 에러 발생 시 빈 배열로 초기화
     }
   };
 
   const fetchLawyerDetails = async (lawyerId) => {
     try {
       const response = await axios.get(
-        `http://localhost:8080/api/v1/lawyer/info/${lawyerId}`
+        `${SERVER_URL}/api/v1/lawyers/${lawyerId}`
       );
-      setSelectedLawyer(response.data);
+      setSelectedLawyer(response.data.payload); // 데이터 키 확인 필요
     } catch (error) {
       console.error("Failed to fetch lawyer details", error);
     }
@@ -195,8 +196,8 @@ const IntroLawyerContent = () => {
   };
 
   const filteredLawyers = selectedSpecialty
-    ? lawyers.filter((lawyer) => lawyer.fieldTag === selectedSpecialty)
-    : lawyers;
+    ? lawyers.filter((lawyer) => lawyer.tagName === selectedSpecialty)
+    : lawyers || []; // 항상 배열
 
   return (
     <MainContainer>
@@ -235,18 +236,18 @@ const IntroLawyerContent = () => {
                 <CareerList>
                   <h2>경력</h2>
                   {selectedLawyer.lawyerProfile
-                    .split(", ")
-                    .map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
+                    ?.split(", ")
+                    .map((item, index) => <li key={index}>{item}</li>) || (
+                    <li>경력 정보가 없습니다.</li>
+                  )}
                 </CareerList>
                 <InfoList>
                   <h2>정보</h2>
                   {selectedLawyer.lawyerExInfo
-                    .split(", ")
-                    .map((item, index) => (
-                      <li key={index}>{item}</li>
-                    ))}
+                    ?.split(", ")
+                    .map((item, index) => <li key={index}>{item}</li>) || (
+                    <li>추가 정보가 없습니다.</li>
+                  )}
                 </InfoList>
               </ListsContainer>
             </LawyerDetailInfo>
@@ -260,7 +261,12 @@ const IntroLawyerContent = () => {
           {filteredLawyers.map((lawyer, index) => (
             <LawyerCard
               key={index}
-              lawyer={lawyer}
+              lawyer={{
+                layerId: lawyer.id,
+                lawyerImageUrl: `${SERVER_URL}/images/${lawyer.imageName}`,
+                lawyerName: lawyer.name,
+                lawyerfield: lawyer.tagName,
+              }}
               onClick={handleLawyerClick}
             />
           ))}
