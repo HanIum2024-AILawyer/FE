@@ -104,6 +104,9 @@ const AddLawyer = () => {
         withCredentials: "true",
       });
       const data = response.data.payload;
+
+      console.log("받은 데이터:", data);
+
       setFormData({
         lawyerName: data.name,
         lawyerIntro: data.intro,
@@ -115,7 +118,21 @@ const AddLawyer = () => {
         lawyerFaxNumber: data.faxNumber,
         lawyerEmail: data.emailAddress,
       });
-      setImagePreview(`${data.imageName}`); // 서버에서 제공한 이미지 URL
+
+      setImagePreview(`${data.imageName}`); // 이미지 URL 설정
+
+      // 상태 업데이트 후 확인
+      console.log("업데이트된 formData:", {
+        lawyerName: data.name,
+        lawyerIntro: data.intro,
+        lawyerTag: data.tagName,
+        lawyerBusinessNumber: data.businessRegistrationNumber,
+        lawyerOfficeName: data.officeName,
+        lawyerOfficeAddress: data.officeAddress,
+        lawyerPhoneNumber: data.phoneNumber,
+        lawyerFaxNumber: data.faxNumber,
+        lawyerEmail: data.emailAddress,
+      });
     } catch (error) {
       console.error("Failed to fetch lawyer data", error);
     }

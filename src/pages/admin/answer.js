@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import styled from "styled-components";
 
-const SERVER_URL = process.env.SERVER_URL;
+const SERVER_URL = process.env.REACT_APP_SERVER_URL;
 
 // 스타일 정의
 const MainContainer = styled.div`
@@ -114,44 +114,46 @@ const Answer = () => {
   const [activeTab, setActiveTab] = useState("waiting");
 
   useEffect(() => {
-    // 페이지가 로드되면 대기 중인 문의를 기본값으로 설정하여 데이터를 불러오는 API 호출
+    // 컴포넌트가 마운트될 때 기본 대기 중인 문의 목록 로드
     fetchQuestions("waiting");
   }, []);
 
   const fetchQuestions = async (tab) => {
-    const endpoint =
-      tab === "waiting"
-        ? "http://localhost:8080/admin/inquery/pending?page=0&size=10"
-        : "http://localhost:8080/admin/inquery/answered?page=0&size=10";
+    const endpoint = `${SERVER_URL}/admin/inquery/${
+      tab === "waiting" ? "pending" : "answered"
+    }?page=0&size=10`;
 
     try {
+      console.log("문의 불러오는 중");
       const response = await fetch(endpoint, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("authToken")}`, // 로컬 스토리지에서 토큰 가져오기
-        },
+        credentials: "include", // 쿠키 포함
       });
 
-      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
 
+      const result = await response.json();
       if (result.is_success) {
         setQuestions(result.payload.content);
       } else {
         alert("문의 목록을 불러오는 데 실패했습니다.");
       }
     } catch (error) {
-      alert("문의 목록을 불러오는 도중 오류가 발생했습니다.");
+      console.error("Fetch Error:", error);
+      alert(`문의 목록 로드 중 오류 발생: ${error.message}`);
     }
   };
 
   const handleTabClick = (tab) => {
     setActiveTab(tab);
     setSelectedQuestion(null);
-    fetchQuestions(tab); // 탭에 따라 데이터를 다시 불러옴
+    fetchQuestions(tab); // 선택된 탭에 따라 문의 목록을 다시 가져옴
   };
 
   const handleQuestionClick = (question) => {
     setSelectedQuestion(question);
-    setAnswer("");
+    setAnswer(""); // 답변 작성 초기화
   };
 
   const handleAnswerChange = (e) => {
@@ -159,21 +161,21 @@ const Answer = () => {
   };
 
   const handleSendAnswer = async () => {
-    // 서버로 전송하는 코드
     try {
-      const response = await fetch(
-        `${SERVER_URL}/admin/inquery/${selectedQuestion.id}/answer`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("authToken")}`, // 로컬 스토리지에서 토큰 가져오기
-          },
-          body: JSON.stringify({ answer }),
-        }
-      );
+      console.log("답변 전송 중");
+      const response = await fetch(`${SERVER_URL}/admin/inquery`, {
+        method: "POST",
+        credentials: "true",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: selectedQuestion.id, // 문의 ID
+          answer, // 답변 내용
+        }),
+      });
 
-      if (response.ok) {
+      if (response.data.is_success) {
         alert("답변이 성공적으로 전송되었습니다.");
 
         // 답변 완료로 상태 업데이트
@@ -187,6 +189,7 @@ const Answer = () => {
         setAnswer("");
       } else {
         alert("답변 전송에 실패했습니다.");
+        console.log(response);
       }
     } catch (error) {
       alert("답변 전송 중 오류가 발생했습니다.");
@@ -217,35 +220,41 @@ const Answer = () => {
         </Tab>
       </TabContainer>
       <QuestionList>
-        {filteredQuestions.map((question) => (
-          <div key={question.id}>
-            <QuestionItem onClick={() => handleQuestionClick(question)}>
-              <QuestionTitle>{question.title}</QuestionTitle>
-              <QuestionEmail>{question.userName}</QuestionEmail>
-              <QuestionText>{question.content}</QuestionText>
-              {question.isAnswer && <AnsweredButton>답변 완료</AnsweredButton>}
-            </QuestionItem>
-            {selectedQuestion && selectedQuestion.id === question.id && (
-              <AnswerContainer>
-                <QuestionTitle>{selectedQuestion.title}</QuestionTitle>
-                <QuestionEmail>{selectedQuestion.userName}</QuestionEmail>
-                <QuestionText>{selectedQuestion.content}</QuestionText>
-                {activeTab === "waiting" ? (
-                  <>
-                    <AnswerTextArea
-                      placeholder="답변하기..."
-                      value={answer}
-                      onChange={handleAnswerChange}
-                    />
-                    <Button onClick={handleSendAnswer}>전송</Button>
-                  </>
-                ) : (
-                  <AnswerTextArea value={selectedQuestion.answer} readOnly />
+        {filteredQuestions.length > 0 ? (
+          filteredQuestions.map((question) => (
+            <div key={question.id}>
+              <QuestionItem onClick={() => handleQuestionClick(question)}>
+                <QuestionTitle>{question.title}</QuestionTitle>
+                <QuestionEmail>{question.userName}</QuestionEmail>
+                <QuestionText>{question.content}</QuestionText>
+                {question.isAnswer && (
+                  <AnsweredButton>답변 완료</AnsweredButton>
                 )}
-              </AnswerContainer>
-            )}
-          </div>
-        ))}
+              </QuestionItem>
+              {selectedQuestion && selectedQuestion.id === question.id && (
+                <AnswerContainer>
+                  <QuestionTitle>{selectedQuestion.title}</QuestionTitle>
+                  <QuestionEmail>{selectedQuestion.userName}</QuestionEmail>
+                  <QuestionText>{selectedQuestion.content}</QuestionText>
+                  {activeTab === "waiting" ? (
+                    <>
+                      <AnswerTextArea
+                        placeholder="답변하기..."
+                        value={answer}
+                        onChange={handleAnswerChange}
+                      />
+                      <Button onClick={handleSendAnswer}>전송</Button>
+                    </>
+                  ) : (
+                    <AnswerTextArea value={selectedQuestion.answer} readOnly />
+                  )}
+                </AnswerContainer>
+              )}
+            </div>
+          ))
+        ) : (
+          <div>문의가 없습니다.</div>
+        )}
       </QuestionList>
     </MainContainer>
   );

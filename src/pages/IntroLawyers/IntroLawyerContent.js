@@ -43,6 +43,9 @@ const LawyerGrid = styled.div`
 `;
 
 const LawyerCardContainer = styled.div`
+  display: flex; /* Flexbox 사용 */
+  flex-direction: column; /* 세로 정렬 */
+  justify-content: space-between; /* 요소 간 간격 설정 */
   border: 1px solid #ddd;
   border-radius: 3%;
   text-align: center;
@@ -51,6 +54,7 @@ const LawyerCardContainer = styled.div`
   width: 360px;
   height: 475px;
   cursor: pointer;
+  padding: 8px; /* padding 추가로 간격 확보 */
 `;
 
 const LawyerPhoto = styled.img`
@@ -101,6 +105,7 @@ const ListsContainer = styled.div`
   display: flex;
   justify-content: space-between;
   margin-top: 10px;
+  height: 30vh;
 `;
 
 const InfoList = styled.ul`
@@ -167,7 +172,6 @@ const IntroLawyerContent = () => {
   const fetchLawyers = async () => {
     try {
       const response = await axios.get(`${SERVER_URL}/api/v1/lawyers`);
-      console.log(response);
       setLawyers(response.data.payload || []); // payload만 저장
     } catch (error) {
       console.error("Failed to fetch lawyers", error);
@@ -220,34 +224,34 @@ const IntroLawyerContent = () => {
         <div>
           <LawyerDetailContainer>
             <LawyerDetailPhoto
-              src={selectedLawyer.lawyerImage}
-              alt={selectedLawyer.lawyerName}
+              src={`${SERVER_URL}/images/${selectedLawyer.imageName}`}
+              alt={selectedLawyer.name}
             />
             <LawyerDetailInfo>
               <HeaderSpecialtyContainer>
-                <LawyerDetailHeader>
-                  {selectedLawyer.lawyerName}
-                </LawyerDetailHeader>
+                <LawyerDetailHeader>{selectedLawyer.name}</LawyerDetailHeader>
                 <LawyerDetailSpecialty>
-                  {selectedLawyer.lawyerTag}
+                  {selectedLawyer.tagName}
                 </LawyerDetailSpecialty>
               </HeaderSpecialtyContainer>
               <ListsContainer>
                 <CareerList>
-                  <h2>경력</h2>
-                  {selectedLawyer.lawyerProfile
-                    ?.split(", ")
-                    .map((item, index) => <li key={index}>{item}</li>) || (
-                    <li>경력 정보가 없습니다.</li>
-                  )}
+                  <h2>사무실 정보</h2>
+                  <ul>
+                    <li>
+                      사업자 번호: {selectedLawyer.businessRegistrationNumber}
+                    </li>
+                    <li>사무실 이름: {selectedLawyer.officeName}</li>
+                    <li>사무실 주소: {selectedLawyer.officeAddress}</li>
+                  </ul>
                 </CareerList>
                 <InfoList>
-                  <h2>정보</h2>
-                  {selectedLawyer.lawyerExInfo
-                    ?.split(", ")
-                    .map((item, index) => <li key={index}>{item}</li>) || (
-                    <li>추가 정보가 없습니다.</li>
-                  )}
+                  <h2>변호사 정보</h2>
+                  <ul>
+                    <li>전화번호: {selectedLawyer.phoneNumber}</li>
+                    <li>팩스 번호: {selectedLawyer.faxNumber}</li>
+                    <li>이메일: {selectedLawyer.emailAddress}</li>
+                  </ul>
                 </InfoList>
               </ListsContainer>
             </LawyerDetailInfo>

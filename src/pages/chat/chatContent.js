@@ -136,7 +136,9 @@ const Button = styled.button`
 
 const ChatApp = () => {
   const [selectedChat, setSelectedChat] = useState(null);
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState([
+    { isUser: true, text: "안녕하세요" },
+  ]);
   const [input, setInput] = useState("");
   const [chatHistory, setChatHistory] = useState([]); // 초기값을 빈 배열로 설정
   const [stompClient, setStompClient] = useState(null);
@@ -181,9 +183,6 @@ const ChatApp = () => {
       setCurrentSubscription(subscription);
 
       fetch(`${SERVER_URL}/api/v1/chatroom/${selectedChat}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("jwt")}`,
-        },
         credentials: "include",
       })
         .then((response) => response.json())
@@ -212,6 +211,7 @@ const ChatApp = () => {
 
   // 메시지 전송
   const handleSend = () => {
+    console.log("전송 진행중");
     if (input.trim() && stompClient) {
       const newMessages = [...messages, { isUser: true, text: input }];
       setMessages(newMessages);

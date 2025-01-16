@@ -336,7 +336,6 @@ const Header = () => {
                 <>
                   <Link onClick={handleLogout}>로그아웃</Link>
                   <Link to="/withdrawl">회원탈퇴</Link>
-                  <Link to="/admin">관리자 페이지</Link>
                 </>
               ) : (
                 <Link to="/login">로그인</Link>
